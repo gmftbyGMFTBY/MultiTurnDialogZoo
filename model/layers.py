@@ -3,7 +3,7 @@
 # Time: 2019.2.24
 
 '''
-Attention Layer
+Functional Layers
 '''
 
 import torch
@@ -17,6 +17,7 @@ import math
 import random
 import numpy as np
 import pickle
+import ipdb
 
 
 class Attention(nn.Module):
@@ -114,8 +115,8 @@ class Graph_attention(nn.Module):
         # expand the attent weight throught in the graph
         # weights: [batch, timestep], graph: [batch, (2, num_edges), [num_edges]]
         # expand the weight to the son
-        for i in range(len(self.path)):
-            new_w = np.zeros(weights.shape)    # [batch, timestep]
+        for i in range(self.path):
+            new_w = np.zeros(weights.shape, dtype=np.float32)    # [batch, timestep]
             for i in range(len(graph)):
                 j_1, j_2 = graph[i]
                 for x, y in zip(j_1, j_2):
@@ -123,11 +124,15 @@ class Graph_attention(nn.Module):
                         continue
                     else:
                         if self.mode == 'son':
-                            new_w[i][y] += weights[i][x]
+                            new_w[i][y] += weights[i][x].item()
                         else:
-                            new_w[i][x] += weights[i][y]
+                            new_w[i][x] += weights[i][y].item()
+            new_w = torch.from_numpy(new_w)
+            if torch.cuda.is_available():
+                new_w = new_w.cuda()
             new_w *= self.weight
-            weights += new_w
+            # ipdb.set_trace()
+            weights = new_w
         return weights.unsqueeze(1)    # [batch, 1, timestep]
         
     def forward(self, hidden, encoder_outputs, graph):
