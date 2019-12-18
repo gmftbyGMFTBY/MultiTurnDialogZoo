@@ -58,8 +58,9 @@ def cal_ROUGE(refer, candidate):
 
 
 def cal_BERTScore(refer, candidate):
-    _, _, bert_scores = score(candidate, refer, 
-                              bert="bert-base-uncased", no_idf=True)
+    _, _, bert_scores = score(candidate, refer, lang='en')
+    # _, _, bert_scores = score(candidate, refer, 
+    #                           bert="bert-base-uncased", no_idf=True)
     bert_scores = bert_scores.tolist()
     bert_scores = [0.5 if math.isnan(score) else score for score in bert_scores]
     return np.mean(bert_scores)

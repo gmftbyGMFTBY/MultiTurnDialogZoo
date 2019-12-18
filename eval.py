@@ -42,9 +42,9 @@ if __name__ == "__main__":
     distinct_1, distinct_2 = cal_Distinct(candidates)
 
     # BERTScore < 512 for bert
-    # ref = [' '.join(i) for i in ref]
-    # tgt = [' '.join(i) for i in tgt]
-    # bert_scores = cal_BERTScore(ref, tgt)
+    ref = [' '.join(i) for i in ref]
+    tgt = [' '.join(i) for i in tgt]
+    bert_scores = cal_BERTScore(ref, tgt)
 
     print(f'Model {args.model} Result')
     print(f'BLEU-1: {round(bleu1_sum / counter, 4)}')
@@ -53,4 +53,4 @@ if __name__ == "__main__":
     print(f'BLEU-4: {round(bleu4_sum / counter, 4)}')
     print(f'ROUGE: {round(rouge_sum / counter, 4)}')
     print(f'Distinct-1: {round(distinct_1, 4)}; Distinct-2: {round(distinct_2, 4)}')
-    # print(f'BERTScore: {round(bert_scores, 4)}')
+    print(f'BERTScore: {round(bert_scores, 4)}')

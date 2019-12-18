@@ -115,25 +115,29 @@ class Graph_attention(nn.Module):
         # expand the attent weight throught in the graph
         # weights: [batch, timestep], graph: [batch, (2, num_edges), [num_edges]]
         # expand the weight to the son
-        for i in range(self.path):
-            new_w = np.zeros(weights.shape, dtype=np.float32)    # [batch, timestep]
-            for i in range(len(graph)):
-                j_1, j_2 = graph[i]
-                for x, y in zip(j_1, j_2):
-                    if y == x + 1:
-                        continue
-                    else:
-                        if self.mode == 'son':
-                            new_w[i][y] += weights[i][x].item()
+        try:
+            for i in range(self.path):
+                new_w = np.zeros(weights.shape, dtype=np.float32)    # [batch, timestep]
+                for i in range(len(graph)):
+                    j_1, j_2 = graph[i][0]
+                    for x, y in zip(j_1, j_2):
+                        if y == x + 1:
+                            continue
                         else:
-                            new_w[i][x] += weights[i][y].item()
-            new_w = torch.from_numpy(new_w)
-            if torch.cuda.is_available():
-                new_w = new_w.cuda()
-            new_w *= self.weight
-            # ipdb.set_trace()
-            weights = new_w
-        return weights.unsqueeze(1)    # [batch, 1, timestep]
+                            if self.mode == 'son':
+                                new_w[i][y] += weights[i][x].item()
+                            else:
+                                new_w[i][x] += weights[i][y].item()
+                new_w = torch.from_numpy(new_w)
+                if torch.cuda.is_available():
+                    new_w = new_w.cuda()
+                new_w *= self.weight
+                # ipdb.set_trace()
+                weights = new_w
+            return weights.unsqueeze(1)    # [batch, 1, timestep]
+        except Exception as e:
+            print(f'[!] {e}')
+            ipdb.set_trace()
         
     def forward(self, hidden, encoder_outputs, graph):
         # hidden: from decoder, [batch, decoder_hidden_size]

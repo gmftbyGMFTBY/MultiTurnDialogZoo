@@ -64,7 +64,7 @@ if [ $hierarchical == 1 ]; then
     maxlen=50
     batch_size=32
 else
-    maxlen=300
+    maxlen=200
     batch_size=16
 fi
 

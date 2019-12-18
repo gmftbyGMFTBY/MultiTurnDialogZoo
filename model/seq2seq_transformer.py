@@ -28,6 +28,7 @@ class transformer(nn.Module):
         self.dropout = dropout
         self.pos_emb = PositionEmbedding(self.embed_size, dropout=dropout)
 
+        self.embed_size = 512
         self.model = nn.Transformer(d_model=self.embed_size, nhead=nhead, 
                                     num_encoder_layers=n_layers,
                                     num_decoder_layers=n_layers, dropout=self.dropout)
