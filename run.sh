@@ -177,7 +177,7 @@ elif [ $mode = 'train' ]; then
         --src_dev ./data/$dataset/src-dev.txt \
         --tgt_dev ./data/$dataset/tgt-dev.txt \
         --min_threshold 0 \
-        --max_threshold 20 \
+        --max_threshold 30 \
         --lr 5e-5 \
         --batch_size $batch_size \
         --weight_decay 1e-7 \
@@ -189,10 +189,10 @@ elif [ $mode = 'train' ]; then
         --decoder_hidden 500 \
         --seed 20 \
         --embed_size $embed_size \
-        --patience 10 \
+        --patience 5 \
         --dataset $dataset \
         --grad_clip 3 \
-        --epochs 50 \
+        --epochs 30 \
         --maxlen $maxlen \
         --dropout 0.3 \
         --d_model $embed_size \
@@ -222,7 +222,7 @@ elif [ $mode = 'translate' ]; then
         --src_test ./data/$dataset/src-test.txt \
         --tgt_test ./data/$dataset/tgt-test.txt \
         --min_threshold 0 \
-        --max_threshold 20 \
+        --max_threshold 30 \
         --batch_size $batch_size \
         --model $model \
         --utter_n_layer 2 \

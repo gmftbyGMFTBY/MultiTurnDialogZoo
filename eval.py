@@ -42,8 +42,8 @@ if __name__ == "__main__":
     distinct_1, distinct_2 = cal_Distinct(candidates)
 
     # BERTScore < 512 for bert
-    # ref = [' '.join(i)[:512] for i in ref]
-    # tgt = [' '.join(i)[:512] for i in tgt]
+    # ref = [' '.join(i) for i in ref]
+    # tgt = [' '.join(i) for i in tgt]
     # bert_scores = cal_BERTScore(ref, tgt)
 
     print(f'Model {args.model} Result')

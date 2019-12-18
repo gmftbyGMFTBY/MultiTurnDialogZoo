@@ -91,6 +91,70 @@ class WSeq_attention(nn.Module):
         # [batch, hidden]
         return vector
     
+
+class Graph_attention(nn.Module):
+    
+    '''
+    Expand the attention weight to the son(or father?) node in the graph.
+    Path is the step that expands the weights, default as 1, this hyperparameters can be test.
+    The expandation weight is another hyperparameter that can be decided.
+    '''
+    
+    def __init__(self, hidden_size, mode='son', path=1, weight=0.1):
+        super(Graph_attention, self).__init__()
+        self.mode = mode    # son means the son mode expandation, or father
+        self.weight = weight
+        self.path = path
+        self.attn = nn.Linear(hidden_size * 2, hidden_size * 2)
+        self.v = nn.Parameter(torch.rand(hidden_size * 2))
+        stdv = 1. / math.sqrt(self.v.size(0))
+        self.v.data.uniform_(-stdv, stdv)
+        
+    def expand_attn(self, weights, graph):
+        # expand the attent weight throught in the graph
+        # weights: [batch, timestep], graph: [batch, (2, num_edges), [num_edges]]
+        # expand the weight to the son
+        for i in range(len(self.path)):
+            new_w = np.zeros(weights.shape)    # [batch, timestep]
+            for i in range(len(graph)):
+                j_1, j_2 = graph[i]
+                for x, y in zip(j_1, j_2):
+                    if y == x + 1:
+                        continue
+                    else:
+                        if self.mode == 'son':
+                            new_w[i][y] += weights[i][x]
+                        else:
+                            new_w[i][x] += weights[i][y]
+            new_w *= self.weight
+            weights += new_w
+        return weights.unsqueeze(1)    # [batch, 1, timestep]
+        
+    def forward(self, hidden, encoder_outputs, graph):
+        # hidden: from decoder, [batch, decoder_hidden_size]
+        # graph: [batch, ([2, num_edges], [num_edges])]
+        timestep = encoder_outputs.shape[0]
+        h = hidden.repeat(timestep, 1, 1).transpose(0, 1)    # [batch, timestep, decoder_hidden_size]
+        encoder_outputs = encoder_outputs.transpose(0, 1)    # [batch, timestep, encoder_hidden_size]
+        
+        # [batch, timestep]
+        attn_energies = self.score(h, encoder_outputs)
+        attn_energies = F.softmax(attn_energies, dim=1)      # [batch, timestep]
+        attn_energies = self.expand_attn(attn_energies, graph)    # [batch, 1, timestep]
+        
+        return attn_energies     # [batch, 1, timestep]
+         
+    def score(self, hidden, encoder_outputs):
+        # hidden: [batch, timestep, decoder_hidden_size]
+        # encoder_outputs: [batch, timestep, encoder_hidden_size]
+        # energy: [batch, timestep, hidden_size]
+        energy = torch.tanh(self.attn(torch.cat([hidden, encoder_outputs], 2)))
+        energy = energy.transpose(1, 2)    # [batch, 2 * hidden_size, timestep]
+        v = self.v.repeat(encoder_outputs.size(0), 1).unsqueeze(1)    # [batch, 1, 2 * hidden_size]
+        energy = torch.bmm(v, energy)    # [batch, 1, timestep]
+        return energy.squeeze(1)    # [batch, timestep]
+    
+    
 class PositionEmbedding(nn.Module):
 
     '''

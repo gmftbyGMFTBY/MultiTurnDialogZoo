@@ -13,9 +13,12 @@ Our motivation is to prove that explicit multi-round context modeling or explici
 ## Metric
 1. PPL
 2. BLEU-4
-3. Distinct-1
-4. Distinct-2
-5. human annotation
+3. ROUGE
+4. BERTScore
+5. EA, VX, Greedy Maching
+6. Distinct-1
+7. Distinct-2
+8. human annotation
 
 ## Requirements
 1. Pytorch >= 1.2 (Transformer support & pack_padded update)

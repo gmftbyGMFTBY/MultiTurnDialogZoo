@@ -196,21 +196,22 @@ class Decoder_ggcn(nn.Module):
         self.gru = nn.GRU(self.embed_size + self.hidden_size, self.hidden_size)
         self.out = nn.Linear(2 * hidden_size, output_size)
 
-        self.attn = Attention(hidden_size)
+        # self.attn = Attention(hidden_size)
+        self.attn = Graph_attention(hidden_size)
         self.init_weight()
 
     def init_weight(self):
         init.orthogonal_(self.gru.weight_hh_l0)
         init.orthogonal_(self.gru.weight_ih_l0)
         
-    def forward(self, inpt, last_hidden, gcncontext):
+    def forward(self, inpt, last_hidden, gcncontext, graph):
         # inpt: [batch_size], last_hidden: [1, batch, hidden_size]
         # gcncontext: [turn_len, batch, hidden_size], user_de: [batch, 11]
         embedded = self.embed(inpt).unsqueeze(0)    # [1, batch_size, embed_size]
         last_hidden = last_hidden.squeeze(0)    # [batch, hidden]
 
         # attention on the gcncontext
-        attn_weights = self.attn(last_hidden, gcncontext)
+        attn_weights = self.attn(last_hidden, gcncontext, graph)
         context = attn_weights.bmm(gcncontext.transpose(0, 1))
         context = context.transpose(0, 1)    # [1, batch, hidden]
 
@@ -304,7 +305,7 @@ class GatedGCN(nn.Module):
         output = tgt[0, :]
 
         for i in range(1, maxlen):
-            output, hidden = self.decoder(output, hidden, context_output)
+            output, hidden = self.decoder(output, hidden, context_output, gbatch)
             outputs[i] = output
             is_teacher = random.random() < self.teach_force
             top1 = output.data.max(1)[1]
@@ -353,7 +354,7 @@ class GatedGCN(nn.Module):
             output = output.cuda()
         
         for i in range(1, maxlen):
-            output, hidden = self.decoder(output, hidden, context_output)
+            output, hidden = self.decoder(output, hidden, context_output, gbatch)
             floss[i] = output
             output = output.max(1)[1]
             outputs[i] = output

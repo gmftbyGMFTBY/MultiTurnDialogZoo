@@ -343,11 +343,11 @@ if __name__ == "__main__":
                         help='random seed')
     parser.add_argument('--embed_size', type=int, default=200, 
                         help='embedding layer size')
-    parser.add_argument('--patience', type=int, default=25, help='patience for early stop')
+    parser.add_argument('--patience', type=int, default=5, help='patience for early stop')
     parser.add_argument('--dataset', type=str, default='dailydialog', 
                         help='dataset for training')
     parser.add_argument('--grad_clip', type=float, default=10.0, help='grad clip')
-    parser.add_argument('--epochs', type=int, default=100, help='epochs for training')
+    parser.add_argument('--epochs', type=int, default=20, help='epochs for training')
     parser.add_argument('--src_vocab', type=str, default=None, help='src vocabulary')
     parser.add_argument('--tgt_vocab', type=str, default=None, help='tgt vocabulary')
     parser.add_argument('--maxlen', type=int, default=50, help='the maxlen of the utterance')
