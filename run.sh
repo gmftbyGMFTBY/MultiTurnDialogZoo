@@ -71,7 +71,29 @@ fi
 # setting
 echo "========== $mode begin =========="
 
-if [ $mode = 'vocab' ]; then
+if [ $mode = 'perturbation' ]; then
+    echo "[!] Begin to perturbation the source test dataset"
+    for i in {5..5}
+    do
+        python utils.py \
+            --mode perturbation \
+            --perturbation_in ./data/$dataset/src-test.txt \
+            --perturbation_out ./data/$dataset/src-test-perturbation-${i}.txt \
+            --perturbation_mode $i
+            
+        python utils.py \
+            --mode graph \
+            --src ./data/$dataset/src-test-perturbation-${i}.txt \
+            --tgt ./data/$dataset/tgt-test.txt \
+            --src_vocab ./processed/$dataset/iptvocab.pkl \
+            --tgt_vocab ./processed/$dataset/optvocab.pkl \
+            --graph ./processed/$dataset/test-graph-perturbation-${i}.pkl \
+            --threshold 0.4 \
+            --maxlen $maxlen \
+            --no-bidir
+    done
+
+elif [ $mode = 'vocab' ]; then
     # Generate the src and tgt vocabulary
     echo "[!] Begin to generate the vocab"
     python utils.py \
@@ -217,6 +239,8 @@ elif [ $mode = 'translate' ]; then
     else
         embed_size=300
     fi
+    
+    rm ./processed/$dataset/$model/ppl.txt
 
     CUDA_VISIBLE_DEVICES="$CUDA" python translate.py \
         --src_test ./data/$dataset/src-test.txt \
@@ -246,6 +270,39 @@ elif [ $mode = 'translate' ]; then
         --contextrnn \
         --plus 0 \
         --context_threshold 2
+        
+    for i in {1..10}
+    do
+        echo "========== running the perturbation $i =========="
+        CUDA_VISIBLE_DEVICES="$CUDA" python translate.py \
+            --src_test ./data/$dataset/src-test-perturbation-${i}.txt \
+            --tgt_test ./data/$dataset/tgt-test.txt \
+            --min_threshold 0 \
+            --max_threshold 30 \
+            --batch_size $batch_size \
+            --model $model \
+            --utter_n_layer 2 \
+            --utter_hidden 500 \
+            --context_hidden 500 \
+            --decoder_hidden 500 \
+            --seed 20 \
+            --embed_size $embed_size \
+            --d_model $embed_size \
+            --dataset $dataset \
+            --src_vocab ./processed/$dataset/iptvocab.pkl \
+            --tgt_vocab ./processed/$dataset/optvocab.pkl \
+            --maxlen $maxlen \
+            --pred ./processed/${dataset}/${model}/pred.txt \
+            --hierarchical $hierarchical \
+            --tgt_maxlen 50 \
+            --pretrained $pretrained \
+            --graph $graph \
+            --test_graph ./processed/$dataset/test-graph-perturbation-${i}.pkl \
+            --position_embed_size 30 \
+            --contextrnn \
+            --plus 0 \
+            --context_threshold 2
+    done
 
 elif [ $mode = 'eval' ]; then
     CUDA_VISIBLE_DEVICES="$CUDA" python eval.py \

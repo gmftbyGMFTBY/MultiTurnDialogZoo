@@ -85,6 +85,12 @@ Get the curve of all the training checkpoints
 ./run.sh curve dailydialog MTGCN none 4
 ```
 
+Pertubate the source test dataset
+
+```python
+./run per
+```
+
 ## Experiment
 
 ### 1. Models

@@ -14,6 +14,7 @@ import os
 import torch
 import nltk
 import ipdb
+import random
 from tqdm import tqdm
 from scipy.linalg import norm
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
@@ -54,6 +55,9 @@ def cosine_similarity_tfidf(s1, s2):
 
 
 def load_glove_embedding(path, dimension=300):
+    if os.path.exists('./data/glove_embedding.pkl'):
+        print(f'[!] load from the preprocessed embeddings ./data/glove_embedding.pkl')
+        return load_pickle('./data/glove_embedding.pkl')
     with open(path) as f:
         vocab = {}
         for line in f.readlines():
@@ -63,6 +67,8 @@ def load_glove_embedding(path, dimension=300):
             vocab[line[0]] = vector
     vocab['<unk>'] = np.random.rand(dimension)
     print(f'[!] load GloVe word embedding from {path}')
+    with open('./data/glove_embedding.pkl', 'wb') as f:
+        pickle.dump(vocab, f)
     return vocab
 
 
@@ -407,6 +413,116 @@ def analyse_graph(path, hops=3):
     # ========== stat ========== #
     ratio = [i / j for i, j in avg_cover]
     print(f'[!] the avg graph coverage of the context is {round(np.mean(ratio), 4)}')
+    
+    
+def Perturbations_test(src_test_in, src_test_out, mode=1):
+    '''
+    ACL 2019 Short paper:
+    Do Neural Dialog Systems Use the Conversation History Effectively? An Empirical Study
+    
+    ## Utterance-level
+    1. Shuf: shuffles the sequence of utterances in the dialog history
+    2. Rev:  reverses the order of utterances in the history (but maintains word order within each utterance)
+    3.4. Drop: completely drops certain utterances (drop first / drop last)
+    5. Truncate: that truncates the dialog history
+    
+    ## Word-level
+    6. word-shuffle: randomly shuffles the words within an utterance
+    7. reverse: reverses the ordering of words
+    8. word-drop: drops 30% of the words uniformly
+    9. noun-drop: drops all nouns
+    10. verb-drop: drops all verbs
+    '''
+    
+    # load the file
+    with open(src_test_in) as f:
+        corpus = []
+        for line in f.readlines():
+            line = line.strip()
+            sentences = line.split('__eou__')
+            sentences = [i.strip() for i in sentences]
+            corpus.append(sentences)
+    print(f'[!] load the data from {src_test_in}')
+    
+    print(f'[!] perburtation mode: {mode}')
+    # perturbation
+    new_corpus = []
+    for i in corpus:
+        if mode == 1:
+            random.shuffle(i)
+            new_corpus.append(i) 
+        elif mode == 2:
+            new_corpus.append(list(reversed(i)))
+        elif mode == 3:
+            if len(i) > 1:
+                new_corpus.append(i[1:])
+            else:
+                new_corpus.append(i)
+        elif mode == 4:
+            if len(i) > 1:
+                new_corpus.append(i[:-1])
+            else:
+                new_corpus.append(i)
+        elif mode == 5:
+            new_corpus.append([i[-1]])
+        elif mode == 6:
+            s_ = []
+            for s in i:
+                user, s = s[:8], s[8:].strip()
+                words = nltk.word_tokenize(s)
+                random.shuffle(words)
+                s_.append(user + ' '.join(words))
+            new_corpus.append(s_)
+        elif mode == 7:
+            s_ = []
+            for s in i:
+                user, s = s[:8], s[8:].strip()
+                words = nltk.word_tokenize(s)
+                s_.append(user + ' '.join(list(reversed(words))))
+            new_corpus.append(s_)
+        elif mode == 8:
+            s_ = []
+            for s in i:
+                user, s = s[:8], s[8:].strip()
+                words = nltk.word_tokenize(s)
+                words = [w_ for w_ in words if random.random() > 0.3]
+                s_.append(user + ' '.join(words))
+            new_corpus.append(s_)
+        elif mode == 9:
+            s_ = []
+            for s in i:
+                user, s = s[:8], s[8:].strip()
+                tagger = nltk.pos_tag(nltk.word_tokenize(s))
+                words = []
+                for w, t in tagger:
+                    if t in ['NN', 'NNS', 'NNP', 'NNPS']:
+                        continue
+                    else:
+                        words.append(w)
+                s_.append(user + ' '.join(words))
+            new_corpus.append(s_)
+        elif mode == 10:
+            s_ = []
+            for s in i:
+                user, s = s[:8], s[8:].strip()
+                tagger = nltk.pos_tag(nltk.word_tokenize(s))
+                words = []
+                for w, t in tagger:
+                    if t in ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']:
+                        continue
+                    else:
+                        words.append(w)
+                s_.append(user + ' '.join(words))
+            new_corpus.append(s_)
+        else:
+            raise Exception(f'[!] wrong mode: {mode}')
+    
+    # write the new source test file
+    with open(src_test_out, 'w') as f:
+        for i in new_corpus:
+            i = ' __eou__ '.join(i)
+            f.write(f'{i}\n')
+    print(f'[!] write the new file into {src_test_out}')
 
 
 
@@ -432,6 +548,9 @@ if __name__ == "__main__":
     parser.add_argument('--bidir', dest='bidir', action='store_true')
     parser.add_argument('--no-bidir', dest='bidir', action='store_false')
     parser.add_argument('--hops', type=int, default=3)
+    parser.add_argument('--perturbation_in', type=str, default=None)
+    parser.add_argument('--perturbation_out', type=str, default=None)
+    parser.add_argument('--perturbation_mode', type=int, default=1)
     args = parser.parse_args()
 
     mode = args.mode
@@ -451,5 +570,10 @@ if __name__ == "__main__":
         generate_graph(ppdataset, args.graph, threshold=args.threshold, bidir=args.bidir)
     elif mode == 'stat':
         analyse_graph(args.graph, hops=args.hops)
+    elif mode == 'perturbation':
+        if args.perturbation_in and args.perturbation_out:
+            Perturbations_test(args.perturbation_in, args.perturbation_out, mode=args.perturbation_mode)
+        else:
+            print(f'[!] check the perturbation file path')
     else:
         print(f'[!] wrong mode to run the script')

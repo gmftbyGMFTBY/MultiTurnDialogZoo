@@ -23,12 +23,11 @@ class transformer(nn.Module):
         super(transformer, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
-        self.embed_size = embed_size
+        self.embed_size = 512
         self.src_pad, self.tgt_pad, self.tgt_sos = src_pad, tgt_pad, tgt_sos
         self.dropout = dropout
         self.pos_emb = PositionEmbedding(self.embed_size, dropout=dropout)
 
-        self.embed_size = 512
         self.model = nn.Transformer(d_model=self.embed_size, nhead=nhead, 
                                     num_encoder_layers=n_layers,
                                     num_decoder_layers=n_layers, dropout=self.dropout)

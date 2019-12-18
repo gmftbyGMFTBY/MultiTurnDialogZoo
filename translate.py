@@ -209,7 +209,8 @@ def translate(**kwargs):
                         
     l = round(total_loss / batch_num, 4)
     print(f'[!] write the translate result into {kwargs["pred"]}')
-    print(f'[!] loss: {l}, ppl: {round(math.exp(l), 4)}')
+    print(f'[!] loss: {l}, ppl: {round(math.exp(l), 4)}', 
+          file=open(f'./processed/{kwargs["dataset"]}/{kwargs["model"]}/ppl.txt', 'a'))
 
 
 if __name__ == "__main__":
