@@ -88,7 +88,7 @@ Get the curve of all the training checkpoints
 Pertubate the source test dataset
 
 ```python
-./run per
+./run.sh perturbation dailydialog
 ```
 
 ## Experiment

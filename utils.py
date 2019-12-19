@@ -170,7 +170,7 @@ def generate_bert_embedding(vocab, path):
     print(f'[!] write the bert embedding into {path}')
     
     
-def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.4, bidir=False):
+def create_the_graph(turns, vocab, weights=[1, 0.1], threshold=0.4, bidir=False):
     '''create the weighted directed graph of one conversation
     sequenutial edge, user connected edge, [BERT/PMI] edge
     param: turns: [turns(user, utterance)]
@@ -242,9 +242,9 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.4, bidir=False):
                 
                 if weight >= threshold:
                     if edges.get((i, j), None):
-                        edges[(i, j)].append(weight)
+                        edges[(i, j)].append(weight * u_w)
                     else:
-                        edges[(i, j)] = [weight]
+                        edges[(i, j)] = [weight * u_w]
                     pe += 1
 
     # clean the edges

@@ -62,10 +62,10 @@ fi
 # maxlen and batch_size
 if [ $hierarchical == 1 ]; then
     maxlen=50
-    batch_size=32
+    batch_size=64
 else
     maxlen=200
-    batch_size=16
+    batch_size=32
 fi
 
 # setting
@@ -73,7 +73,7 @@ echo "========== $mode begin =========="
 
 if [ $mode = 'perturbation' ]; then
     echo "[!] Begin to perturbation the source test dataset"
-    for i in {5..5}
+    for i in {1..10}
     do
         python utils.py \
             --mode perturbation \
