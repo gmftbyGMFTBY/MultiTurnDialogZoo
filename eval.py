@@ -4,7 +4,8 @@
 
 from metric.metric import * 
 import argparse
-import ipdb
+import pickle
+from tqdm import tqdm
 
 
 if __name__ == "__main__":
@@ -27,7 +28,7 @@ if __name__ == "__main__":
 
     # BLEU and ROUGE
     rouge_sum, bleu1_sum, bleu2_sum, bleu3_sum, bleu4_sum, counter = 0, 0, 0, 0, 0, 0
-    for rr, cc in zip(ref, tgt):
+    for rr, cc in tqdm(list(zip(ref, tgt))):
         rouge_sum += cal_ROUGE(rr, cc)
         bleu1_sum += cal_BLEU([rr], cc, ngram=1)
         bleu2_sum += cal_BLEU([rr], cc, ngram=2)
@@ -36,15 +37,29 @@ if __name__ == "__main__":
         counter += 1
 
     # Distinct-1, Distinct-2
-    candidates = []
-    for line in tgt:
-        candidates.extend(line)
+    candidates, references = [], []
+    for line1, line2 in zip(tgt, ref):
+        candidates.extend(line1)
+        references.extend(line2)
     distinct_1, distinct_2 = cal_Distinct(candidates)
+    rdistinct_1, rdistinct_2 = cal_Distinct(references)
 
     # BERTScore < 512 for bert
-    ref = [' '.join(i) for i in ref]
-    tgt = [' '.join(i) for i in tgt]
-    bert_scores = cal_BERTScore(ref, tgt)
+    # Fuck BERTScore, slow as the snail, fuck it
+    # ref = [' '.join(i) for i in ref]
+    # tgt = [' '.join(i) for i in tgt]
+    # bert_scores = cal_BERTScore(ref, tgt)
+    
+    # Embedding-based metric: Embedding Average (EA), Vector Extrema (VX), Greedy Matching (GM)
+    # load the dict
+    with open('./data/glove_embedding.pkl', 'rb') as f:
+        dic = pickle.load(f)
+    ea_sum, vx_sum, gm_sum, counterp = 0, 0, 0, 0
+    for rr, cc in tqdm(list(zip(ref, tgt))):
+        ea_sum += cal_embedding_average(rr, cc, dic)
+        vx_sum += cal_vector_extrema(rr, cc, dic)
+        # gm_sum += cal_greedy_matching(rr, cc, dic)
+        counterp += 1
 
     print(f'Model {args.model} Result')
     print(f'BLEU-1: {round(bleu1_sum / counter, 4)}')
@@ -53,4 +68,8 @@ if __name__ == "__main__":
     print(f'BLEU-4: {round(bleu4_sum / counter, 4)}')
     print(f'ROUGE: {round(rouge_sum / counter, 4)}')
     print(f'Distinct-1: {round(distinct_1, 4)}; Distinct-2: {round(distinct_2, 4)}')
-    print(f'BERTScore: {round(bert_scores, 4)}')
+    print(f'Ref distinct-1: {round(rdistinct_1, 4)}; Ref distinct-2: {round(rdistinct_2, 4)}')
+    print(f'EA: {round(ea_sum / counterp, 4)}')
+    print(f'VX: {round(vx_sum / counterp, 4)}')
+    # Greedy Matching is also very slow
+    # print(f'GM: {round(gm_sum / counterp, 4)}')

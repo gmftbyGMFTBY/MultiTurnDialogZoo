@@ -1,24 +1,18 @@
 # Multi-turn modeling
 Tradtional RNN-based or HRED-based method model the context relationship implictly.
 Our motivation is to prove that explicit multi-round context modeling or explicit edge among the context utterances can effectively provide more meaningful information for dialogue generation.
-* Seq2Seq
-* HRED-based (HRED, WSeq)
-* Attention-based (ReCoSa)
-* Our proposed model
 
 ## Dataset 
-1. DailyDialog
-2. Cornell
+1. DailyDialog dataset
+2. Cornell movie
 
 ## Metric
 1. PPL
 2. BLEU-4
 3. ROUGE
-4. BERTScore
-5. EA, VX, Greedy Maching
-6. Distinct-1
-7. Distinct-2
-8. human annotation
+4. Embedding Average, Vector Extrema, Greedy Maching
+5. Distinct-1/2
+6. human annotation
 
 ## Requirements
 1. Pytorch >= 1.2 (Transformer support & pack_padded update)
@@ -29,7 +23,9 @@ Our motivation is to prove that explicit multi-round context modeling or explici
 6. scipy
 7. sklearn
 8. [rouge](https://github.com/pltrdy/rouge)
-8. GloVe 300 dimension word embedding
+8. GloVe 300 dimension word embedding (Create the graph and embedding-based metric)
+9. Pytorch_geometric (PyG 1.2)
+10. CUDA 9.2 (match with PyG)
 
 ## Dataset format
 Each dataset contains 6 files
@@ -42,6 +38,8 @@ Each dataset contains 6 files
 
 In all the files, one line contain only one dialogue context (src) or the dialogue response (tgt).
 More details can be found in the example files.
+In order to create the graph, each sentence must begin with the 
+special tokens `<user0>` and `<user1>` which denote the speaker.
 
 ## How to use
 Generate the vocab of the dataset
@@ -58,7 +56,7 @@ Generate the graph of the dataset
 ./run.sh graph dailydialog MTGCN none 0 
 ```
 
-Train the model (HRED / WSeq / Seq2Seq / Transformer / MReCoSa / ReCoSa) on the dataset (dailydialog / cornell):
+Train the model (HRED / WSeq / Seq2Seq / Transformer / MReCoSa) on the dataset (dailydialog / cornell):
 
 ```python
 # train mode, dataset dailydialog, model HRED, pretrained [bert/none] on 4th GPU
@@ -94,15 +92,14 @@ Pertubate the source test dataset
 ## Experiment
 
 ### 1. Models
-* seq2seq: seq2seq with attention
-* HRED-attn: hierarchical seq2seq model with attention on context encoder
-* WSeq: modified HRED model
-* ReCoSa: 2019 ACL state-of-the-art generatice dialogue method
-* MTGCN: GatedGCN architecture without the Gated RNN mechanism
-* GCNRNN: combine the GCN and RNN hidden state
-* GatedGCN: Gated MTGCN
+* __Seq2Seq__: seq2seq with attention
+* __HRED-attn__: hierarchical seq2seq model with attention on context encoder
+* __WSeq__: modified HRED model with the Cosine attention weight on conversation context
+* __ReCoSa__: 2019 ACL state-of-the-art generatice dialogue method, PPL is larger than the ReCoSa paper(ACL 2019) because of the more open dialogue topic (more open, harder to match with the ground-truth)
+* __MTGCN__: GCN for context modeling
+* __GatedGCN__: Gated GCN for context modeling
 
-### 2. Automatic evualtion
+### 2. Automatic evaluation
 
 <table border="1" align="center">
   <tr>
@@ -121,69 +118,69 @@ Pertubate the source test dataset
   </tr>
   <tr>
     <td>Seq2Seq-attn</td>
-    <td><strong>29.1222</strong></td>
-    <td><strong>0.1801</strong></td>
-    <td><strong>0.1225</strong></td>
-    <td><strong>0.1073<strong></td>
-    <td><strong>0.1003<strong></td>
-    <td><strong>0.4528<strong></td>
-    <td>0.0237</td>
-    <td>0.1101</td>
+    <td><strong></strong></td>
+    <td><strong></strong></td>
+    <td><strong></strong></td>
+    <td><strong><strong></td>
+    <td><strong><strong></td>
+    <td><strong><strong></td>
+    <td></td>
+    <td></td>
   </tr>
   <tr>
     <td>HRED-attn</td>
-    <td>32.4078</td>
-    <td>0.1773</td>
-    <td>0.1199</td>
-    <td>0.1050</td>
-    <td>0.0979</td>
-    <td>0.4476</td>
-    <td>0.0222</td>
-    <td>0.1132</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
   </tr>
   <tr>
     <td>WSeq</td>
-    <td>32.8483</td>
-    <td>0.1641</td>
-    <td>0.1116</td>
-    <td>0.0994</td>
-    <td>0.0941</td>
-    <td>0.0286</td>
-    <td>0.0168</td>
-    <td>0.0717</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
   </tr>
   <tr>
     <td>ReCoSa</td>
-    <td>31.5414</td>
-    <td>0.1618</td>
-    <td>0.1113</td>
-    <td>0.0986</td>
-    <td>0.0930</td>
-    <td>0.0323</td>
-    <td>0.0176</td>
-    <td>0.0764</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
   </tr>
   <tr>
     <td>MTGCN</td>
-    <td>40.0649</td>
-    <td>0.1623</td>
-    <td>0.1105</td>
-    <td>0.0981</td>
-    <td>0.0928</td>
-    <td>0.4349</td>
-    <td><strong>0.0279<strong></td>
-    <td>0.1443</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
   </tr>
   <tr>
     <td>GatedGCN</td>
-    <td>40.6785</td>
-    <td>0.1633</td>
-    <td>0.1098</td>
-    <td>0.0964</td>
-    <td>0.0904</td>
-    <td>0.4347</td>
-    <td>0.0267</td>
-    <td><strong>0.1676<\strong></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
   </tr>
 </table>
 
@@ -215,14 +212,14 @@ Pertubate the source test dataset
   </tr>
   <tr>
     <td>HRED-attn</td>
-    <td>32.4078</td>
-    <td>0.1350</td>
-    <td>0.1001</td>
-    <td>0.0934</td>
-    <td>0.0924</td>
-    <td>0.0145</td>
-    <td>0.0162</td>
-    <td>0.0698</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
   </tr>
   <tr>
     <td>WSeq</td>
@@ -259,83 +256,6 @@ Pertubate the source test dataset
   </tr>
   <tr>
     <td>GatedGCN</td>
-    <td>40.6785</td>
-    <td>0.1258</td>
-    <td>0.0930</td>
-    <td>0.0869</td>
-    <td>0.0859</td>
-    <td>0.0126</td>
-    <td><strong>0.0358<\strong></td>
-    <td><strong>0.1462<\strong></td>
-  </tr>
-</table>
-
-### 2. Layers of the GCNConv (GatedGCN)
-
-#### 2.1 Test the influence of the layers number for the performance. (1, 2, 3, 4, 5 layers)
-
-<table border="1" align="center">
-  <tr>
-    <th rowspan="2">Models</th>
-    <th colspan="4">DailyDialog</th>
-    <th colspan="4">Cornell</th>
-  </tr>
-  <tr>
-    <td>PPL</td>
-    <td>BLEU4</td> 
-    <td>Dist-1</td>
-    <td>Dist-2</td>
-    <td>PPL</td>
-    <td>BLEU4</td>
-    <td>Dist-1</td>
-    <td>Dist-2</td>
-  </tr>
-  <tr>
-    <td>GCNRNN(1)</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>GCNRNN(2)</td>
-    <td>42.1443</td>
-    <td>0.0879</td>
-    <td>0.0154</td>
-    <td>0.0646</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>GCNRNN(3)</td>
-    <td>42.8841</td>
-    <td>0.0881</td>
-    <td>0.0166</td>
-    <td>0.0680</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>GCNRNN(4)</td>
-    <td>44.3583</td>
-    <td>0.0887</td>
-    <td>0.0125</td>
-    <td>0.0502</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>GCNRNN(5)</td>
     <td></td>
     <td></td>
     <td></td>
@@ -346,10 +266,46 @@ Pertubate the source test dataset
     <td></td>
   </tr>
 </table>
-
-
-#### 2.2 Test the influence of the GatedGCN layers number for the performance. (1, 2, 3, 4, 5 layers)
-
+        
+### 3. Human judgments
+        
+<table>
+  <tr>
+    <th rowspan="2">Baselines</th>
+    <th colspan="3">GatedGCN</th>
+  </tr>
+  <tr>
+    <td>win%</td>
+    <td>tie%</td>
+    <td>loss%</td>
+  </tr>
+  <tr>
+    <td>HRED-attn</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>WSeq</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>ReCoSa</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>MTGCN</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+        
+### 4. Layers of the GCNConv (GatedGCN)
 <table border="1" align="center">
   <tr>
     <th rowspan="2">Models</th>
@@ -424,8 +380,198 @@ Pertubate the source test dataset
 </table>
 
 
-### 3. Graph ablation analyse
+### 5. Graph ablation analyse
 1. complete graph
 2. w/o user dependency edge
 3. w/o sequence dependency edge
 4. difference way to construct the graph and the influence for the performance
+        
+Note: More edges better performance
+        
+### 6. PPL Perturbation analyse
+More details of this experiment can be found in [ACL 2019 Short paper for context analyse in multi-turn dialogue systems](https://arxiv.org/pdf/1906.01603.pdf).
+        
+#### 6.1 Dailydialog
+<table>
+  <tr>
+    <th rowspan="2">Models</th>
+    <th rowspan="2">Test PPL</th>
+    <th colspan="5">Utterance-level</th>
+    <th colspan="5">Word-level</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>2</td>
+    <td>3</td>
+    <td>4</td>
+    <td>5</td>
+    <td>6</td>
+    <td>7</td>
+    <td>8</td>
+    <td>9</td>
+    <td>10</td>
+  </tr>
+  <tr>
+    <td>HRED-attn</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>WSeq</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>ReCoSa</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>MTGCN</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>GatedGCN</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+            
+#### 6.2 Cornell
+        
+<table>
+  <tr>
+    <th rowspan="2">Models</th>
+    <th rowspan="2">Test PPL</th>
+    <th colspan="5">Utterance-level</th>
+    <th colspan="5">Word-level</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>2</td>
+    <td>3</td>
+    <td>4</td>
+    <td>5</td>
+    <td>6</td>
+    <td>7</td>
+    <td>8</td>
+    <td>9</td>
+    <td>10</td>
+  </tr>
+  <tr>
+    <td>HRED-attn</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>WSeq</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>ReCoSa</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>MTGCN</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>GatedGCN</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>

@@ -68,7 +68,7 @@ else
     batch_size=32
 fi
 
-# setting
+# ========== Ready Perfectly ========== #
 echo "========== $mode begin =========="
 
 if [ $mode = 'perturbation' ]; then
@@ -164,8 +164,7 @@ elif [ $mode = 'graph' ]; then
 elif [ $mode = 'train' ]; then
     rm -rf ./ckpt/$dataset/$model
     mkdir -p ./ckpt/$dataset/$model
-    
-    # clear tensorbard cache
+    rm ./processed/$dataset/$model/ppl.txt
     rm tblogs/$dataset/$model/*
 
     # pretrained embedding
@@ -199,7 +198,7 @@ elif [ $mode = 'train' ]; then
         --src_dev ./data/$dataset/src-dev.txt \
         --tgt_dev ./data/$dataset/tgt-dev.txt \
         --min_threshold 0 \
-        --max_threshold 30 \
+        --max_threshold 100 \
         --lr 5e-5 \
         --batch_size $batch_size \
         --weight_decay 1e-7 \
@@ -214,7 +213,7 @@ elif [ $mode = 'train' ]; then
         --patience 5 \
         --dataset $dataset \
         --grad_clip 3 \
-        --epochs 30 \
+        --epochs 100 \
         --maxlen $maxlen \
         --dropout 0.3 \
         --d_model $embed_size \
@@ -230,6 +229,7 @@ elif [ $mode = 'train' ]; then
         --dev_graph ./processed/$dataset/dev-graph.pkl \
         --position_embed_size 30 \
         --contextrnn \
+        --pred ./processed/${dataset}/${model}/pred.txt \
         --context_threshold 2
 
 elif [ $mode = 'translate' ]; then
@@ -271,6 +271,7 @@ elif [ $mode = 'translate' ]; then
         --plus 0 \
         --context_threshold 2
         
+    # 10 perturbation
     for i in {1..10}
     do
         echo "========== running the perturbation $i =========="
@@ -321,7 +322,8 @@ elif [ $mode = 'curve' ]; then
     
     rm ./processed/${dataset}/${model}/conclusion.txt
     
-    for i in {1..30}
+    # for i in {1..30}
+    for i in $(seq 20 5 100)
     do
         # translate
         CUDA_VISIBLE_DEVICES="$CUDA" python translate.py \

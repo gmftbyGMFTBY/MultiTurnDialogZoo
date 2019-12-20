@@ -170,7 +170,7 @@ def generate_bert_embedding(vocab, path):
     print(f'[!] write the bert embedding into {path}')
     
     
-def create_the_graph(turns, vocab, weights=[1, 0.1], threshold=0.4, bidir=False):
+def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.4, bidir=False):
     '''create the weighted directed graph of one conversation
     sequenutial edge, user connected edge, [BERT/PMI] edge
     param: turns: [turns(user, utterance)]
@@ -273,7 +273,7 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
     # src 
     with open(src) as f:
         src_dataset = []
-        for line in f.readlines():
+        for line in tqdm(f.readlines()):
             utterances = line.split('__eou__')
             turn = []
             srcu = []
@@ -292,7 +292,7 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
     # tgt
     with open(tgt) as f:
         tgt_dataset = []
-        for line in f.readlines():
+        for line in tqdm(f.readlines()):
             if '<user0>' in line: user_c, user_cr = '<user0>', 'user0'
             elif '<user1>' in line: user_c, user_cr = '<user1>', 'user1'
             line = line.replace(user_c, user_cr).strip()
