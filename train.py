@@ -403,6 +403,8 @@ def main(**kwargs):
     patience = 0
     best_val_loss = None
     teacher_force_ratio = kwargs['teach_force']    # default 1
+    teacher_force_ratio_counter = kwargs['dynamic_tfr_counter']
+    holder = teacher_force_ratio_counter
 
     # train
     for epoch in pbar:
@@ -476,7 +478,11 @@ def main(**kwargs):
         
         # dynamic teach_force_ratio
         if epoch > kwargs["dynamic_tfr"]:
-            teacher_force_ratio /= kwargs["dynamic_tfr_weight"]
+            if holder == 0:
+                teacher_force_ratio /= kwargs["dynamic_tfr_weight"]
+                holder = teacher_force_ratio_counter
+            else:
+                holder -= 1
             net.teach_force = teacher_force_ratio
         
 
@@ -542,6 +548,7 @@ if __name__ == "__main__":
     parser.add_argument('--pred', type=str, default=None, help='the file save the output')
     parser.add_argument('--dynamic_tfr', type=int, default=20, help='begin to use the dynamic teacher forcing ratio, each ratio divide the tfr_weight')
     parser.add_argument('--dynamic_tfr_weight', type=float, default=2)
+    parser.add_argument('--dynamic_tfr_counter', type=int, default=5)
 
 
     args = parser.parse_args()
