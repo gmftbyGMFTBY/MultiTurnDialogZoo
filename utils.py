@@ -163,7 +163,7 @@ def generate_vocab(files, vocab, cutoff=50000):
     words = []
     for file in files:
         with open(file) as f:
-            for line in f.readlines():
+            for line in tqdm(f.readlines()):
                 words.extend(nltk.word_tokenize(line))
     words = Counter(words)
     print(f'[!] whole vocab size: {len(words)}')

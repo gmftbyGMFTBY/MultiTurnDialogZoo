@@ -209,9 +209,9 @@ elif [ $mode = 'train' ]; then
         --tgt_dev ./data/$dataset/tgt-dev.txt \
         --min_threshold 0 \
         --max_threshold 100 \
-        --lr 5e-5 \     # 5e-5
+        --lr 5e-5 \
         --batch_size $batch_size \
-        --weight_decay 1e-7 \    # 1e-7
+        --weight_decay 1e-7 \
         --model $model \
         --utter_n_layer 2 \
         --utter_hidden 500 \
@@ -240,7 +240,9 @@ elif [ $mode = 'train' ]; then
         --position_embed_size 30 \
         --contextrnn \
         --pred ./processed/${dataset}/${model}/pred.txt \
-        --context_threshold 2
+        --context_threshold 2 \
+        --dynamic_tfr 20 \
+        --dynamic_tfr_weight 2 
 
 elif [ $mode = 'translate' ]; then
     

@@ -19,14 +19,14 @@ Our motivation is to prove that explicit multi-round context modeling or explici
 2. Python 3.6+
 3. tqdm
 4. numpy
-5. nltk
+5. nltk 3.4+
 6. scipy
 7. sklearn
 8. [rouge](https://github.com/pltrdy/rouge)
 8. glove 300 dimension word embedding (Create the graph and embedding-based metric)
 9. pytorch_geometric (PyG 1.2)
 10. cuda 9.2 (match with PyG)
-11. tensorboard (for PyTorch 1.1)
+11. tensorboard (for PyTorch 1.2+)
 
 ## Dataset format
 Each dataset contains 6 files
@@ -45,54 +45,59 @@ special tokens `<user0>` and `<user1>` which denote the speaker.
 ## How to use
 Generate the vocab of the dataset
 
-```python
+```bash
+# default 25000 words
 ./run.sh vocab dailydialog 
 ```
 
 Generate the graph of the dataset
 
-```python
-# only MTGCN and GCNRNN need to create the graph
-# The average context coverage in the graph: 0.7935/0.7949/0.7794 (train/test/dev) 
+```bash
+# only MTGCN and GatedGCN need to create the graph
 ./run.sh graph dailydialog MTGCN none 0 
 ```
 
 Train the model (HRED / WSeq / Seq2Seq / Transformer / MReCoSa) on the dataset (dailydialog / cornell):
 
-```python
+```bash
 # train mode, dataset dailydialog, model HRED, pretrained [bert/none] on 4th GPU
+# max epochs is 100. You can simply stop the training when the performance shown in tensorboard is flatten (ctrl-c). 
 ./run.sh train dailydialog HRED bert 4
 tensorboard --logdir tblogs
 ```
 
 Train the N-gram Language Model by NLTK (Lidstone with 0.5 gamma, default n-gram is 3):
-```python
+
+```bash
+# train the N-gram Language model by NLTK
 ./run.sh lm dailydialog
 ```
 
 Translate the test dataset and caulculate the test perplexity by using n-gram model:
 
-```python
+```bash
 # translate mode, dataset dialydialog, model HRED, pretrained [bert/none] on 4th GPU
 ./run.sh translate dailydialog HRED bert 4
 ```
 
 Evaluate the result of the translated utterances
 
-```python
+```bash
 # get the BLEU and Distinct result of the generated sentences on 4th GPU (BERTScore need it)
 ./run.sh eval dailydialog HRED none 4
 ```
 
 Get the curve of all the training checkpoints
 
-```python
+```bash
+# draw the performance curve, but actually, you can get all the information from the tensorboard
 ./run.sh curve dailydialog MTGCN none 4
 ```
 
-Pertubate the source test dataset
+Perturbate the source test dataset
 
-```python
+```bash
+# 10 mode for perturbation
 ./run.sh perturbation dailydialog
 ```
 

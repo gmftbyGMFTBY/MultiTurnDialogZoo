@@ -402,6 +402,7 @@ def main(**kwargs):
     min_loss = np.inf
     patience = 0
     best_val_loss = None
+    teacher_force_ratio = kwargs['teach_force']    # default 1
 
     # train
     for epoch in pbar:
@@ -471,7 +472,12 @@ def main(**kwargs):
         # measure the performance, write into the tensorboard
         write_into_tb(kwargs['pred'], writer, writer_str, epoch, ppl)
         
-        pbar.set_description(f'Epoch: {epoch}, val_loss: {val_loss}, val_ppl: {round(math.exp(val_loss), 4)}, patience: {patience}/{kwargs["patience"]}')
+        pbar.set_description(f'Epoch: {epoch}, val_loss: {val_loss}, val_ppl: {round(math.exp(val_loss), 4)}, patience: {patience}/{kwargs["patience"]}, tfr: {teacher_force_ratio}')
+        
+        # dynamic teach_force_ratio
+        if epoch > kwargs["dynamic_tfr"]:
+            teacher_force_ratio /= kwargs["dynamic_tfr_weight"]
+            net.teach_force = teacher_force_ratio
         
 
     pbar.close()
@@ -534,6 +540,8 @@ if __name__ == "__main__":
     parser.add_argument('--dev_graph', type=str, default=None, help='dev graph data path')
     parser.add_argument('--context_threshold', type=int, default=3, help='low turns filter')
     parser.add_argument('--pred', type=str, default=None, help='the file save the output')
+    parser.add_argument('--dynamic_tfr', type=int, default=20, help='begin to use the dynamic teacher forcing ratio, each ratio divide the tfr_weight')
+    parser.add_argument('--dynamic_tfr_weight', type=float, default=2)
 
 
     args = parser.parse_args()
