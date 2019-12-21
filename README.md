@@ -15,17 +15,18 @@ Our motivation is to prove that explicit multi-round context modeling or explici
 6. human annotation
 
 ## Requirements
-1. Pytorch >= 1.2 (Transformer support & pack_padded update)
-2. Python >= 3.6
+1. Pytorch 1.2+ (Transformer support & pack_padded update)
+2. Python 3.6+
 3. tqdm
 4. numpy
 5. nltk
 6. scipy
 7. sklearn
 8. [rouge](https://github.com/pltrdy/rouge)
-8. GloVe 300 dimension word embedding (Create the graph and embedding-based metric)
-9. Pytorch_geometric (PyG 1.2)
-10. CUDA 9.2 (match with PyG)
+8. glove 300 dimension word embedding (Create the graph and embedding-based metric)
+9. pytorch_geometric (PyG 1.2)
+10. cuda 9.2 (match with PyG)
+11. tensorboard (for PyTorch 1.1)
 
 ## Dataset format
 Each dataset contains 6 files
@@ -61,9 +62,15 @@ Train the model (HRED / WSeq / Seq2Seq / Transformer / MReCoSa) on the dataset (
 ```python
 # train mode, dataset dailydialog, model HRED, pretrained [bert/none] on 4th GPU
 ./run.sh train dailydialog HRED bert 4
+tensorboard --logdir tblogs
 ```
 
-Translate the test dataset to generate the sentences for evaluating:
+Train the N-gram Language Model by NLTK (Lidstone with 0.5 gamma, default n-gram is 3):
+```python
+./run.sh lm dailydialog
+```
+
+Translate the test dataset and caulculate the test perplexity by using n-gram model:
 
 ```python
 # translate mode, dataset dialydialog, model HRED, pretrained [bert/none] on 4th GPU
@@ -390,6 +397,9 @@ Note: More edges better performance
         
 ### 6. PPL Perturbation analyse
 More details of this experiment can be found in [ACL 2019 Short paper for context analyse in multi-turn dialogue systems](https://arxiv.org/pdf/1906.01603.pdf).
+        
+About the PPL analysis, make sure the teacher forcing ratio is less than 0.5, or the PPL of the model will be very high. In this paper, I set the teacher forcing ratio as 1 to make sure the process of converging is fast. If you want to reproduce the PPL perturbation results, make sure the teacher force ratio is low. For reference, the n-gram ppl is also shown.
+        
         
 #### 6.1 Dailydialog
 <table>

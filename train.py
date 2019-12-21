@@ -460,8 +460,6 @@ def main(**kwargs):
         state = {'net': net.state_dict(), 'epoch': epoch}
         torch.save(state, 
                        f'./ckpt/{kwargs["dataset"]}/{kwargs["model"]}/vloss_{val_loss}_epoch_{epoch}.pt')
-        
-        pbar.set_description(f'Epoch: {epoch}, val_loss: {val_loss}, val_ppl: {round(math.exp(val_loss), 4)}, patience: {patience}/{kwargs["patience"]}')
 
         # if patience > kwargs['patience']:
         #     print(f'Early Stop {kwargs["patience"]} at epoch {epoch}')
@@ -472,6 +470,8 @@ def main(**kwargs):
         
         # measure the performance, write into the tensorboard
         write_into_tb(kwargs['pred'], writer, writer_str, epoch, ppl)
+        
+        pbar.set_description(f'Epoch: {epoch}, val_loss: {val_loss}, val_ppl: {round(math.exp(val_loss), 4)}, patience: {patience}/{kwargs["patience"]}')
         
 
     pbar.close()

@@ -209,8 +209,19 @@ def translate(**kwargs):
                         
     l = round(total_loss / batch_num, 4)
     print(f'[!] write the translate result into {kwargs["pred"]}')
-    print(f'[!] loss: {l}, ppl: {round(math.exp(l), 4)}', 
-          file=open(f'./processed/{kwargs["dataset"]}/{kwargs["model"]}/ppl.txt', 'a'))
+    
+    if kwargs['ppl'] == 'origin':
+        print(f'[!] loss: {l}, N-gram PPL: {round(math.exp(l), 4)}', file=open(f'./processed/{kwargs["dataset"]}/{kwargs["model"]}/ppl.txt', 'a'))
+    elif kwargs['ppl'] == 'ngram':
+        # n-gram ppl
+        lm = load_pickle(f'./data/{kwargs["dataset"]}/lm.pkl')
+        ref_data, tgt_data = read_pred_file(kwargs["pred"])
+        print(f'[!] ========== begin to calcualte the n-gram ppl ==========')
+        ref_ppl = ngram_ppl(lm, ref_data)
+        ppl = ngram_ppl(lm, tgt_data)
+        print(f'[!] Ref N-gram ppl: {round(ref_ppl, 4)}, N-gram PPL: {round(ppl, 4)}', file=open(f'./processed/{kwargs["dataset"]}/{kwargs["model"]}/ppl.txt', 'a'))
+    else:
+        raise Exception(f'[!] make sure the mode for ppl calculating is origin or ngram, but {kwargs["ppl"]} is given.')
 
 
 if __name__ == "__main__":
@@ -252,6 +263,7 @@ if __name__ == "__main__":
     parser.add_argument('--graph', type=int, default=0)
     parser.add_argument('--plus', type=int, default=2)
     parser.add_argument('--context_threshold', type=int, default=3, help='low turns filter')
+    parser.add_argument('--ppl', type=str, default='origin', help='origin: e^{loss} ppl; ngram: supported by NLTK. More details can be found in README.')
 
     args = parser.parse_args()
     

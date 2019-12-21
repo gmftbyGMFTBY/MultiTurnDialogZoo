@@ -71,7 +71,13 @@ fi
 # ========== Ready Perfectly ========== #
 echo "========== $mode begin =========="
 
-if [ $mode = 'perturbation' ]; then
+if [ $mode = 'lm' ]; then
+    echo "[!] Begin to train the N-gram Language Model"
+    python utils.py \
+        --dataset $dataset \
+        --mode lm 
+
+elif [ $mode = 'perturbation' ]; then
     echo "[!] Begin to perturbation the source test dataset"
     for i in {1..10}
     do
@@ -162,10 +168,14 @@ elif [ $mode = 'graph' ]; then
         --no-bidir 
         
 elif [ $mode = 'train' ]; then
+    # cp -r ./ckpt/$dataset/$model ./bak/ckpt    # too big, stop back up it
     rm -rf ./ckpt/$dataset/$model
     mkdir -p ./ckpt/$dataset/$model
     rm ./processed/$dataset/$model/ppl.txt
+    cp -r tblogs/$dataset/ ./bak/tblogs
     rm tblogs/$dataset/$model/*
+    
+    echo "[!] back up finished"
 
     # pretrained embedding
     if [ $pretrained = 'bert' ]; then
@@ -199,13 +209,13 @@ elif [ $mode = 'train' ]; then
         --tgt_dev ./data/$dataset/tgt-dev.txt \
         --min_threshold 0 \
         --max_threshold 100 \
-        --lr 5e-5 \
+        --lr 5e-5 \     # 5e-5
         --batch_size $batch_size \
-        --weight_decay 1e-7 \
+        --weight_decay 1e-7 \    # 1e-7
         --model $model \
         --utter_n_layer 2 \
         --utter_hidden 500 \
-        --teach_force 1 \
+        --teach_force 0.5 \
         --context_hidden 500 \
         --decoder_hidden 500 \
         --seed 20 \
@@ -269,7 +279,8 @@ elif [ $mode = 'translate' ]; then
         --position_embed_size 30 \
         --contextrnn \
         --plus 0 \
-        --context_threshold 2
+        --context_threshold 2 \
+        --ppl origin
         
     # 10 perturbation
     for i in {1..10}
@@ -302,7 +313,8 @@ elif [ $mode = 'translate' ]; then
             --position_embed_size 30 \
             --contextrnn \
             --plus 0 \
-            --context_threshold 2
+            --context_threshold 2 \
+            --ppl origin
     done
 
 elif [ $mode = 'eval' ]; then

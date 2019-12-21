@@ -12,14 +12,36 @@ from collections import Counter
 import pickle
 import os
 import torch
-import nltk
 import ipdb
 import random
 from tqdm import tqdm
 from scipy.linalg import norm
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-
 from model.layers import NoamOpt
+
+import nltk
+from nltk.util import bigrams
+from nltk.util import pad_sequence
+from nltk.lm.preprocessing import pad_both_ends
+from nltk.util import everygrams
+from nltk.lm.preprocessing import flatten
+from nltk.lm.preprocessing import padded_everygram_pipeline
+from nltk.lm import MLE, Lidstone
+
+
+# ========== calculate the N-gram perplexity ========== #
+def train_ngram_lm(dataset, data, ngram=3, gamma=0.5):
+    print(f'[!] max 3-gram, Lidstone smoothing with gamma 0.5')
+    train, vocab = padded_everygram_pipeline(ngram, data)
+    lm = Lidstone(gamma, ngram)
+    lm.fit(train, vocab)
+    with open(f'./data/{dataset}/lm.pkl', 'wb') as f:
+        pickle.dump(lm, f)
+    print(f'[!] ngram language model saved into ./data/{dataset}/lm.pkl')
+    
+
+def ngram_ppl(lm, test):
+    return lm.perplexity(test)
 
 
 # ========== jaccard, cosine + tf, cosine + tf-idf, GloVe ========== #
@@ -523,13 +545,38 @@ def Perturbations_test(src_test_in, src_test_out, mode=1):
             i = ' __eou__ '.join(i)
             f.write(f'{i}\n')
     print(f'[!] write the new file into {src_test_out}')
+    
+    
+def read_file(path):
+    with open(path) as f:
+        corpus = []
+        for line in f.readlines():
+            line = line.strip()
+            corpus.append(line.split())
+    return corpus
 
+
+def read_pred_file(path):
+    with open(path) as f:
+        ref, tgt = [], []
+        for idx, line in enumerate(f.readlines()):
+            if idx % 4 == 1:
+                line = line.replace("user1", "").replace("user0", "").replace("- ref: ", "").replace('<sos>', '').replace('<eos>', '').strip()
+                ref.append(line.split())
+            elif idx % 4 == 2:
+                line = line.replace("user1", "").replace("user0", "").replace("- tgt: ", "").replace('<sos>', '').replace('<eos>', '').strip()
+                tgt.append(line.split())
+    # filter the empty line
+    ref = [i for i in ref if i]
+    tgt = [i for i in tgt if i]
+    return ref, tgt
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Utils function')
     parser.add_argument('--mode', type=str, default='vocab', 
             help='how to run the utils.py, (vocab,)')
+    parser.add_argument('--dataset', type=str, default='dailydialog')
     parser.add_argument('--file', type=str, nargs='+', default=None, 
             help='file for generating the vocab')
     parser.add_argument('--vocab', type=str, default='',
@@ -551,6 +598,8 @@ if __name__ == "__main__":
     parser.add_argument('--perturbation_in', type=str, default=None)
     parser.add_argument('--perturbation_out', type=str, default=None)
     parser.add_argument('--perturbation_mode', type=int, default=1)
+    parser.add_argument('--ngram', type=int, default=3)
+    parser.add_argument('--gamma', type=float, default=0.5)
     args = parser.parse_args()
 
     mode = args.mode
@@ -575,5 +624,8 @@ if __name__ == "__main__":
             Perturbations_test(args.perturbation_in, args.perturbation_out, mode=args.perturbation_mode)
         else:
             print(f'[!] check the perturbation file path')
+    elif mode == 'lm':
+        data = read_file(f'./data/{args.dataset}/src-train.txt')
+        train_ngram_lm(args.dataset, data, ngram=args.ngram, gamma=args.gamma)
     else:
         print(f'[!] wrong mode to run the script')
