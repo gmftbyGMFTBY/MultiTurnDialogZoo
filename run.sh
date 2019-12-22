@@ -242,7 +242,9 @@ elif [ $mode = 'train' ]; then
         --pred ./processed/${dataset}/${model}/pred.txt \
         --context_threshold 2 \
         --dynamic_tfr 20 \
-        --dynamic_tfr_weight 5
+        --dynamic_tfr_weight 0.05 \
+        --dynamic_tfr_counter 5 \
+        --dynamic_tfr_threshold 0.3 
 
 elif [ $mode = 'translate' ]; then
     
