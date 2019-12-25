@@ -8,9 +8,10 @@ Our motivation is to prove that explicit multi-round context modeling or explici
 
 ## Metric
 1. PPL
-2. BLEU-4
+2. BLEU-1~4
 3. ROUGE
-4. Embedding Average, Vector Extrema, Greedy Maching
+4. Embedding Average, Vector Extrema, Greedy Maching   
+    __Greedy Matching is also very slow__ (optional)
 5. Distinct-1/2
 6. human annotation
 

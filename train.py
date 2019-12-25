@@ -444,7 +444,7 @@ def main(**kwargs):
                                               kwargs['src_vocab'], kwargs['tgt_vocab'],
                                               kwargs['batch_size'], kwargs['maxlen'])
 
-        writer_str = f'{kwargs["dataset"]}-{kwargs["model"]}'
+        writer_str = f'{kwargs["dataset"]}'
         train(train_iter, net, optimizer, len(tgt_w2idx), tgt_w2idx['<pad>'], 
               grad_clip=kwargs['grad_clip'], debug=kwargs['debug'],
               transformer_decode=kwargs['transformer_decode'], graph=kwargs['graph']==1)
@@ -474,7 +474,7 @@ def main(**kwargs):
         # measure the performance, write into the tensorboard
         write_into_tb(kwargs['pred'], writer, writer_str, epoch, ppl)
         
-        pbar.set_description(f'Epoch: {epoch}, val_loss: {val_loss}, val_ppl: {round(math.exp(val_loss), 4)}, patience: {patience}/{kwargs["patience"]}, tfr: {round(teacher_force_ratio, 4)}')
+        pbar.set_description(f'Epoch: {epoch}, tfr: {round(teacher_force_ratio, 4)}, val_loss: {val_loss}, val_ppl: {round(math.exp(val_loss), 4)}, patience: {patience}/{kwargs["patience"]}')
         
         # dynamic teach_force_ratio
         if epoch > kwargs["dynamic_tfr"]:
@@ -510,7 +510,8 @@ if __name__ == "__main__":
     parser.add_argument('--model', type=str, default='HRED', help='model to be trained')
     parser.add_argument('--utter_hidden', type=int, default=150, 
                         help='utterance encoder hidden size')
-    parser.add_argument('--teach_force', type=float, default=0.5, help='teach force ratio')
+    parser.add_argument('--teach_force', type=float, default=0.5, 
+                        help='teach force ratio')
     parser.add_argument('--context_hidden', type=int, default=150, 
                         help='context encoder hidden size')
     parser.add_argument('--decoder_hidden', type=int, default=150, 
@@ -519,36 +520,46 @@ if __name__ == "__main__":
                         help='random seed')
     parser.add_argument('--embed_size', type=int, default=200, 
                         help='embedding layer size')
-    parser.add_argument('--patience', type=int, default=5, help='patience for early stop')
+    parser.add_argument('--patience', type=int, default=5, 
+                        help='patience for early stop')
     parser.add_argument('--dataset', type=str, default='dailydialog', 
                         help='dataset for training')
     parser.add_argument('--grad_clip', type=float, default=10.0, help='grad clip')
     parser.add_argument('--epochs', type=int, default=20, help='epochs for training')
     parser.add_argument('--src_vocab', type=str, default=None, help='src vocabulary')
     parser.add_argument('--tgt_vocab', type=str, default=None, help='tgt vocabulary')
-    parser.add_argument('--maxlen', type=int, default=50, help='the maxlen of the utterance')
+    parser.add_argument('--maxlen', type=int, default=50, 
+                        help='the maxlen of the utterance')
     parser.add_argument('--utter_n_layer', type=int, default=1, 
                         help='layers of the utterance encoder')
     parser.add_argument('--debug', dest='debug', action='store_true')
     parser.add_argument('--no-debug', dest='debug', action='store_false')
     parser.add_argument('--dropout', type=float, default=0.5, help='dropout ratio')
-    parser.add_argument('--hierarchical', type=int, default=1, help='Whether hierarchical architecture')
+    parser.add_argument('--hierarchical', type=int, default=1, 
+                        help='Whether hierarchical architecture')
     parser.add_argument('--transformer_decode', type=int, default=0,
                         help='transformer decoder need a little different training process')
-    parser.add_argument('--d_model', type=int, default=512, help='d_model for transformer')
+    parser.add_argument('--d_model', type=int, default=512, 
+                        help='d_model for transformer')
     parser.add_argument('--pretrained', type=str, default='', 
                         help='whether use the pretrained embedding')
     parser.add_argument('--contextrnn', dest='contextrnn', action='store_true')
     parser.add_argument('--no-contextrnn', dest='contextrnn', action='store_false')
     parser.add_argument('--position_embed_size', type=int, default=30)
     parser.add_argument('--graph', type=int, default=0)
-    parser.add_argument('--train_graph', type=str, default=None, help='train graph data path')
-    parser.add_argument('--test_graph', type=str, default=None, help='test graph data path')
-    parser.add_argument('--dev_graph', type=str, default=None, help='dev graph data path')
-    parser.add_argument('--context_threshold', type=int, default=3, help='low turns filter')
-    parser.add_argument('--pred', type=str, default=None, help='the file save the output')
-    parser.add_argument('--dynamic_tfr', type=int, default=20, help='begin to use the dynamic teacher forcing ratio, each ratio minus the tfr_weight')
-    parser.add_argument('--dynamic_tfr_weight', type=float, default=2)
+    parser.add_argument('--train_graph', type=str, default=None, 
+                        help='train graph data path')
+    parser.add_argument('--test_graph', type=str, default=None, 
+                        help='test graph data path')
+    parser.add_argument('--dev_graph', type=str, default=None, 
+                        help='dev graph data path')
+    parser.add_argument('--context_threshold', type=int, default=3, 
+                        help='low turns filter')
+    parser.add_argument('--pred', type=str, default=None, 
+                        help='the file save the output')
+    parser.add_argument('--dynamic_tfr', type=int, default=20, 
+                        help='begin to use the dynamic teacher forcing ratio, each ratio minus the tfr_weight')
+    parser.add_argument('--dynamic_tfr_weight', type=float, default=0.05)
     parser.add_argument('--dynamic_tfr_counter', type=int, default=5)
     parser.add_argument('--dynamic_tfr_threshold', type=float, default=0.3)
 
