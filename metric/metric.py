@@ -8,7 +8,7 @@ import numpy as np
 import math
 # from bert_score import score
 from rouge import Rouge
-
+import os, re
 
 def cal_BLEU(refer, candidate, ngram=1):
     smoothie = SmoothingFunction().method2
@@ -23,6 +23,14 @@ def cal_BLEU(refer, candidate, ngram=1):
     return sentence_bleu(refer, candidate, 
                          weights=weight, 
                          smoothing_function=smoothie)
+
+
+def cal_BLEU_perl(dataset, model):
+    p = os.popen(f'python ./metric/perl-bleu.py {dataset} {model}').read()
+    pattern = re.compile(r'(\w+\.\w+)/(\w+\.\w+)/(\w+\.\w+)/(\w+\.\w+)')
+    bleu1, bleu2, bleu3, bleu4 = pattern.findall(pattern)[0]
+    bleu1, bleu2, bleu3, bleu4 = float(bleu1), float(bleu2), float(bleu3), float(bleu4)
+    return bleu1, bleu2, bleu3, bleu4
 
 
 def cal_Distinct(corpus):

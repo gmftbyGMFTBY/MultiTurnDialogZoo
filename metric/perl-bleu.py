@@ -1,6 +1,12 @@
 import sys
 import os
 
+'''
+BLEU calcualted by the nltk is questionable for open-domain dialogue systems.
+Some bad cases may very long and dublicated, so the brifely penalty is harmful.
+Try to calculate the BLEU score by the multi-bleu script.
+'''
+
 dataset, model = sys.argv[1], sys.argv[2]
 if dataset not in ['cornell', 'dailydialog', 'ubuntu']:
     raise Exception(f'[!] dataset must in cornell, dailydialog, ubuntu. Got {dataset}')
@@ -28,4 +34,4 @@ with open(tgt_p, 'w') as f:
     for i in tgt:
         f.write(f'{i}\n')
 
-os.system(f'./multi-bleu.perl {ref_p} < {tgt_p}')
+os.system(f'./multi-bleu.perl -lc {ref_p} < {tgt_p}')

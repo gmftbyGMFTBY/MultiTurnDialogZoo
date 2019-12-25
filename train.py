@@ -238,7 +238,7 @@ def translate(data_iter, net, **kwargs):
     return math.exp(l)
 
     
-def write_into_tb(pred_path, writer, writer_str, epoch, ppl):
+def write_into_tb(pred_path, writer, writer_str, epoch, ppl, bleu_mode, model, dataset):
     # obtain the performance
     with open(pred_path) as f:
         ref, tgt = [], []
@@ -261,6 +261,14 @@ def write_into_tb(pred_path, writer, writer_str, epoch, ppl):
         bleu3_sum += cal_BLEU([rr], cc, ngram=3)
         bleu4_sum += cal_BLEU([rr], cc, ngram=4)
         counter += 1
+        
+    if bleu_mode == 'perl':
+        bleu1_sum, bleu2_sum, bleu3_sum, bleu4_sum = cal_BLEU_perl(dataset, model)
+    else:
+        bleu1_sum = bleu1_sum / counter
+        bleu2_sum = bleu2_sum / counter
+        bleu3_sum = bleu3_sum / counter
+        bleu4_sum = bleu4_sum / counter
 
     # Distinct-1, Distinct-2
     candidates, references = [], []
@@ -289,10 +297,10 @@ def write_into_tb(pred_path, writer, writer_str, epoch, ppl):
         
     # write into the tensorboard
     writer.add_scalar(f'{writer_str}-Performance/PPL', ppl, epoch)
-    writer.add_scalar(f'{writer_str}-Performance/BLEU-1', bleu1_sum / counter, epoch)
-    writer.add_scalar(f'{writer_str}-Performance/BLEU-2', bleu2_sum / counter, epoch)
-    writer.add_scalar(f'{writer_str}-Performance/BLEU-3', bleu3_sum / counter, epoch)
-    writer.add_scalar(f'{writer_str}-Performance/BLEU-4', bleu4_sum / counter, epoch)
+    writer.add_scalar(f'{writer_str}-Performance/BLEU-1', bleu1_sum, epoch)
+    writer.add_scalar(f'{writer_str}-Performance/BLEU-2', bleu2_sum, epoch)
+    writer.add_scalar(f'{writer_str}-Performance/BLEU-3', bleu3_sum, epoch)
+    writer.add_scalar(f'{writer_str}-Performance/BLEU-4', bleu4_sum, epoch)
     writer.add_scalar(f'{writer_str}-Performance/ROUGE', rouge_sum / counter, epoch)
     writer.add_scalar(f'{writer_str}-Performance/Distinct-1', distinct_1, epoch)
     writer.add_scalar(f'{writer_str}-Performance/Distinct-2', distinct_2, epoch)
@@ -300,6 +308,9 @@ def write_into_tb(pred_path, writer, writer_str, epoch, ppl):
     writer.add_scalar(f'{writer_str}-Performance/Ref-Distinct-2', rdistinct_2, epoch)
     writer.add_scalar(f'{writer_str}-Performance/Embedding-Average', ea_sum / counterp, epoch)
     writer.add_scalar(f'{writer_str}-Performance/Vector-Extrema', vx_sum / counterp, epoch)
+    
+    # write now
+    writer.flush()
 
 
 def main(**kwargs):
@@ -472,7 +483,7 @@ def main(**kwargs):
         ppl = translate(test_iter, net, **kwargs)
         
         # measure the performance, write into the tensorboard
-        write_into_tb(kwargs['pred'], writer, writer_str, epoch, ppl)
+        write_into_tb(kwargs['pred'], writer, writer_str, epoch, ppl, kwargs['bleu'], kwargs['model'], kwargs['dataset'])
         
         pbar.set_description(f'Epoch: {epoch}, tfr: {round(teacher_force_ratio, 4)}, val_loss: {val_loss}, val_ppl: {round(math.exp(val_loss), 4)}, patience: {patience}/{kwargs["patience"]}')
         
@@ -562,6 +573,7 @@ if __name__ == "__main__":
     parser.add_argument('--dynamic_tfr_weight', type=float, default=0.05)
     parser.add_argument('--dynamic_tfr_counter', type=int, default=5)
     parser.add_argument('--dynamic_tfr_threshold', type=float, default=0.3)
+    parser.add_argument('--bleu', type=str, default='nltk', help='nlkt or perl')
 
 
     args = parser.parse_args()
