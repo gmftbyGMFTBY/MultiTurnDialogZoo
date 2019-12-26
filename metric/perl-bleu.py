@@ -3,20 +3,22 @@ import os
 
 '''
 BLEU calcualted by the nltk is questionable for open-domain dialogue systems.
-Some bad cases may very long and dublicated, so the brifely penalty is harmful.
-Try to calculate the BLEU score by the multi-bleu script.
+Some bad cases may be very long and dublicated, so the brifely penalty is harmful.
+Try to calculate the BLEU score by the multi-bleu.perl script (moses).
+
+Called by the train.py in the root folder
 '''
 
 dataset, model = sys.argv[1], sys.argv[2]
-if dataset not in ['cornell', 'dailydialog', 'ubuntu']:
-    raise Exception(f'[!] dataset must in cornell, dailydialog, ubuntu. Got {dataset}')
-if model not in ['HRED', 'WSeq', 'MReCoSa', 'MTGCN', 'GatedGCN']:
-    raise Exception(f'[!] model must in HRED, WSeq, MReCoSa, MTGCN, GatedGCN. Got {model}')
+if dataset not in ['cornell', 'dailydialog', 'ubuntu', 'zh50']:
+    raise Exception(f'[!] dataset must in cornell, dailydialog, ubuntu, zh50. But got {dataset}')
+if model not in ['Seq2Seq', 'Transformer', 'HRED', 'WSeq', 'MReCoSa', 'MTGCN', 'GatedGCN']:
+    raise Exception(f'[!] model must in Seq2Seq, Transformer, HRED, WSeq, MReCoSa, MTGCN, GatedGCN. But got {model}')
 
 
-pred_p = f'../processed/{dataset}/{model}/pred.txt'
-ref_p = f'../processed/{dataset}/{model}/reference.txt'
-tgt_p = f'../processed/{dataset}/{model}/output.txt'
+pred_p = f'./processed/{dataset}/{model}/pred.txt'
+ref_p = f'./processed/{dataset}/{model}/reference.txt'
+tgt_p = f'./processed/{dataset}/{model}/output.txt'
 
 with open(pred_p) as  f:
     tgt, ref = [], []
@@ -34,4 +36,5 @@ with open(tgt_p, 'w') as f:
     for i in tgt:
         f.write(f'{i}\n')
 
-os.system(f'./multi-bleu.perl -lc {ref_p} < {tgt_p}')
+# lc parameters ignore the case
+os.system(f'./metric/multi-bleu.perl -lc {ref_p} < {tgt_p}')

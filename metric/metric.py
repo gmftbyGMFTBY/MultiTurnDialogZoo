@@ -9,6 +9,7 @@ import math
 # from bert_score import score
 from rouge import Rouge
 import os, re
+import ipdb
 
 def cal_BLEU(refer, candidate, ngram=1):
     smoothie = SmoothingFunction().method2
@@ -27,8 +28,9 @@ def cal_BLEU(refer, candidate, ngram=1):
 
 def cal_BLEU_perl(dataset, model):
     p = os.popen(f'python ./metric/perl-bleu.py {dataset} {model}').read()
+    print(f'[!] multi-perl: {p}')
     pattern = re.compile(r'(\w+\.\w+)/(\w+\.\w+)/(\w+\.\w+)/(\w+\.\w+)')
-    bleu1, bleu2, bleu3, bleu4 = pattern.findall(pattern)[0]
+    bleu1, bleu2, bleu3, bleu4 = pattern.findall(p)[0]
     bleu1, bleu2, bleu3, bleu4 = float(bleu1), float(bleu2), float(bleu3), float(bleu4)
     return bleu1, bleu2, bleu3, bleu4
 

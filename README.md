@@ -28,6 +28,7 @@ Our motivation is to prove that explicit multi-round context modeling or explici
 9. pytorch_geometric (PyG 1.2)
 10. cuda 9.2 (match with PyG)
 11. tensorboard (for PyTorch 1.2+)
+12. perl (for running the multi-bleu.perl script)
 
 ## Dataset format
 Each dataset contains 6 files
@@ -42,6 +43,8 @@ In all the files, one line contain only one dialogue context (src) or the dialog
 More details can be found in the example files.
 In order to create the graph, each sentence must begin with the 
 special tokens `<user0>` and `<user1>` which denote the speaker.
+The `__eou__` is used to separate the multiple sentences in the conversation context.
+More details can be found in the small data case.
 
 ## How to use
 Generate the vocab of the dataset
@@ -55,7 +58,8 @@ Generate the graph of the dataset
 
 ```bash
 # only MTGCN and GatedGCN need to create the graph
-./run.sh graph dailydialog MTGCN none 0 
+# zh or en
+./run.sh graph dailydialog zh none 0 
 ```
 
 Train the model (HRED / WSeq / Seq2Seq / Transformer / MReCoSa) on the dataset (dailydialog / cornell):

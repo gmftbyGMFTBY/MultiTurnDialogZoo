@@ -76,20 +76,24 @@ def cosine_similarity_tfidf(s1, s2):
     return np.dot(s1, s2) / (norm(s2) * norm(s2))
 
 
-def load_glove_embedding(path, dimension=300):
-    if os.path.exists('./data/glove_embedding.pkl'):
-        print(f'[!] load from the preprocessed embeddings ./data/glove_embedding.pkl')
-        return load_pickle('./data/glove_embedding.pkl')
+def load_glove_embedding(path, dimension=300, lang='en'):
+    if lang == 'en':
+        exist_ = './data/glove_embedding.pkl'
+    elif lang == 'zh':
+        exist_ = './data/chinese_embedding.pkl'
+    if os.path.exists(exist_):
+        print(f'[!] load from the preprocessed embeddings {exist_}')
+        return load_pickle(exist_)
     with open(path) as f:
         vocab = {}
-        for line in f.readlines():
+        for line in tqdm(f.readlines()):
             line = line.split()
             assert len(line) > 300
             vector = np.array(list(map(float, line[-300:])), dtype=np.float)    # [300]
             vocab[line[0]] = vector
     vocab['<unk>'] = np.random.rand(dimension)
-    print(f'[!] load GloVe word embedding from {path}')
-    with open('./data/glove_embedding.pkl', 'wb') as f:
+    print(f'[!] load word embedding from {path}')
+    with open(exist_, 'wb') as f:
         pickle.dump(vocab, f)
     return vocab
 
@@ -328,14 +332,20 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
     return src_dataset, src_user, tgt_dataset, tgt_user
 
 
-def generate_graph(dialogs, path, threshold=0.75, bidir=False):
+def generate_graph(dialogs, path, threshold=0.75, bidir=False, lang='en'):
     # dialogs: [datasize, turns]
     # return: [datasize, (2, num_edges)/ (num_edges)]
     # **make sure the bert-as-service is running**
     edges = []
     se, ue, pe = 0, 0, 0
-    print(f'[!] prepare to load the GloVe 300 embedding from /home/lt/data/File/wordembedding/glove/glove.6B.300d.txt (you can change this path)')
-    vocab = load_glove_embedding('/home/lt/data/File/wordembedding/glove/glove.6B.300d.txt')
+    if lang == 'en':
+        wbpath = '/home/lt/data/File/wordembedding/glove/glove.6B.300d.txt'
+    elif lang == 'zh':
+        wbpath = '/home/lt/data/File/wordembedding/chinese/sgns.target.word-word.dynwin5.thr10.neg5.dim300.iter5'
+    else:
+        raise Exception(f'[!] unknown language of word embedding path {lang}')
+    print(f'[!] prepare to load the 300 embedding from {wbpath} (you can change this path)')
+    vocab = load_glove_embedding(wbpath, lang=lang)
     for dialog in tqdm(dialogs):
         edge, ses, ueu, pep = create_the_graph(dialog, vocab, threshold=threshold,
                                                bidir=bidir)
@@ -572,6 +582,24 @@ def read_pred_file(path):
     return ref, tgt
 
 
+def analyse_coverage_word_embedding(vocab, lang='en'):
+    if lang == 'en':
+        wbpath = '/home/lt/data/File/wordembedding/glove/glove.6B.300d.txt'
+    elif lang == 'zh':
+        wbpath = '/home/lt/data/File/wordembedding/chinese/sgns.target.word-word.dynwin5.thr10.neg5.dim300.iter5'
+    else:
+        raise Exception(f'[!] unknown language of word embedding path {lang}')
+    count = 0
+    nvocab = load_glove_embedding(wbpath, lang=lang)
+    w2idx, idx2w = load_pickle(vocab)
+    for word in idx2w:
+        if word in nvocab.keys():
+            count += 1
+            
+    print(f'[!] the coverage of the word embedding is {count}/{len(idx2w)}/{round(count / len(idx2w), 2)}')
+    
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Utils function')
     parser.add_argument('--mode', type=str, default='vocab', 
@@ -585,10 +613,10 @@ if __name__ == "__main__":
             help='cutoff of the vocabulary')
     parser.add_argument('--pretrained', type=str, default=None,
             help='Pretrained embedding file')
-    parser.add_argument('--graph', type=str, default='./processed/dailydialog/MTGCN/train-graph.pkl')
+    parser.add_argument('--graph', type=str, default='./processed/dailydialog/train-graph.pkl')
     parser.add_argument('--maxlen', type=int, default=50)
-    parser.add_argument('--src_vocab', type=str, default='./processed/dailydialog/MTGCN/iptvocab.pkl')
-    parser.add_argument('--tgt_vocab', type=str, default='./processed/dailydialog/MTGCN/optvocab.pkl')
+    parser.add_argument('--src_vocab', type=str, default='./processed/zh50/iptvocab.pkl')
+    parser.add_argument('--tgt_vocab', type=str, default='./processed/zh50/optvocab.pkl')
     parser.add_argument('--src', type=str, default='./data/dailydialog/src-train.pkl')
     parser.add_argument('--tgt', type=str, default='./data/dailydialog/tgt-train.pkl')
     parser.add_argument('--threshold', type=float)
@@ -600,12 +628,14 @@ if __name__ == "__main__":
     parser.add_argument('--perturbation_mode', type=int, default=1)
     parser.add_argument('--ngram', type=int, default=3)
     parser.add_argument('--gamma', type=float, default=0.5)
+    parser.add_argument('--lang', type=str, default='en')
     args = parser.parse_args()
 
     mode = args.mode
 
     if mode == 'vocab':
         generate_vocab(args.file, args.vocab, cutoff=args.cutoff)
+        analyse_coverage_word_embedding(args.vocab, lang=args.lang)
     elif mode == 'pretrained':
         with open(args.vocab, 'rb') as f:
             vocab = pickle.load(f)
@@ -616,7 +646,8 @@ if __name__ == "__main__":
         print(f'[!] load the cf mode dataset, prepare for preprocessing')
         ppdataset = idx2sent(src_dataset, args.src_vocab)
         print(f'[!] begin to create the graph')
-        generate_graph(ppdataset, args.graph, threshold=args.threshold, bidir=args.bidir)
+        # ipdb.set_trace()
+        generate_graph(ppdataset, args.graph, threshold=args.threshold, bidir=args.bidir, lang=args.lang)
     elif mode == 'stat':
         analyse_graph(args.graph, hops=args.hops)
     elif mode == 'perturbation':

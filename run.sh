@@ -104,13 +104,13 @@ elif [ $mode = 'vocab' ]; then
     echo "[!] Begin to generate the vocab"
     python utils.py \
         --mode vocab \
-        --cutoff 25000 \
+        --cutoff 50000 \
         --vocab ./processed/$dataset/iptvocab.pkl \
         --file ./data/$dataset/src-train.txt ./data/$dataset/src-dev.txt
 
     python utils.py \
         --mode vocab \
-        --cutoff 25000 \
+        --cutoff 50000 \
         --vocab ./processed/$dataset/optvocab.pkl \
         --file ./data/$dataset/tgt-train.txt ./data/$dataset/tgt-dev.txt
         
@@ -134,6 +134,7 @@ elif [ $mode = 'stat' ]; then
         
 elif [ $mode = 'graph' ]; then
     # generate the graph file for the MTGCN model
+    
     python utils.py \
         --mode graph \
         --src ./data/$dataset/src-train.txt \
@@ -143,7 +144,8 @@ elif [ $mode = 'graph' ]; then
         --graph ./processed/$dataset/train-graph.pkl \
         --threshold 0.4 \
         --maxlen $maxlen \
-        --no-bidir
+        --no-bidir \
+        --lang $3
     
     python utils.py \
         --mode graph \
@@ -154,7 +156,8 @@ elif [ $mode = 'graph' ]; then
         --graph ./processed/$dataset/test-graph.pkl \
         --threshold 0.4 \
         --maxlen $maxlen \
-        --no-bidir
+        --no-bidir \
+        --lang $3
 
     python utils.py \
         --mode graph \
@@ -165,7 +168,8 @@ elif [ $mode = 'graph' ]; then
         --graph ./processed/$dataset/dev-graph.pkl \
         --threshold 0.4 \
         --maxlen $maxlen \
-        --no-bidir 
+        --no-bidir \
+        --lang $3
         
 elif [ $mode = 'train' ]; then
     # cp -r ./ckpt/$dataset/$model ./bak/ckpt    # too big, stop back up it
@@ -207,8 +211,16 @@ elif [ $mode = 'train' ]; then
         --tgt_test ./data/$dataset/tgt-test.txt \
         --src_dev ./data/$dataset/src-dev.txt \
         --tgt_dev ./data/$dataset/tgt-dev.txt \
+        --src_vocab ./processed/$dataset/iptvocab.pkl \
+        --tgt_vocab ./processed/$dataset/optvocab.pkl \
+        --train_graph ./processed/$dataset/train-graph.pkl \
+        --test_graph ./processed/$dataset/test-graph.pkl \
+        --dev_graph ./processed/$dataset/dev-graph.pkl \
+        --pred ./processed/${dataset}/${model}/pred.txt \
         --min_threshold 0 \
         --max_threshold 100 \
+        --seed 100 \
+        --epochs 100 \
         --lr 5e-5 \
         --batch_size $batch_size \
         --weight_decay 1e-6 \
@@ -218,33 +230,26 @@ elif [ $mode = 'train' ]; then
         --teach_force 1 \
         --context_hidden 500 \
         --decoder_hidden 500 \
-        --seed 100 \
         --embed_size $embed_size \
         --patience 5 \
         --dataset $dataset \
         --grad_clip 3 \
-        --epochs 100 \
-        --maxlen $maxlen \
         --dropout 0.3 \
         --d_model $embed_size \
-        --src_vocab ./processed/$dataset/iptvocab.pkl \
-        --tgt_vocab ./processed/$dataset/optvocab.pkl \
-        --no-debug \
         --hierarchical $hierarchical \
         --transformer_decode $transformer_decode \
         --pretrained $pretrained \
         --graph $graph \
-        --train_graph ./processed/$dataset/train-graph.pkl \
-        --test_graph ./processed/$dataset/test-graph.pkl \
-        --dev_graph ./processed/$dataset/dev-graph.pkl \
+        --maxlen $maxlen \
         --position_embed_size 30 \
-        --contextrnn \
-        --pred ./processed/${dataset}/${model}/pred.txt \
         --context_threshold 2 \
         --dynamic_tfr 100 \
         --dynamic_tfr_weight 0.05 \
         --dynamic_tfr_counter 5 \
-        --dynamic_tfr_threshold 0.3 
+        --dynamic_tfr_threshold 0.3 \
+        --bleu perl \
+        --contextrnn \
+        --no-debug
 
 elif [ $mode = 'translate' ]; then
     
