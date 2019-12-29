@@ -300,7 +300,7 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
     with open(src) as f:
         src_dataset = []
         for line in tqdm(f.readlines()):
-            utterances = line.split('__eou__')
+            utterances = line.split('__eou__')    # only for chinese (zh50)
             turn = []
             srcu = []
             for utterance in utterances:
@@ -609,7 +609,7 @@ if __name__ == "__main__":
             help='file for generating the vocab')
     parser.add_argument('--vocab', type=str, default='',
             help='input or output vocabulary')
-    parser.add_argument('--cutoff', type=int, default=50000,
+    parser.add_argument('--cutoff', type=int, default=0000,
             help='cutoff of the vocabulary')
     parser.add_argument('--pretrained', type=str, default=None,
             help='Pretrained embedding file')
@@ -635,7 +635,7 @@ if __name__ == "__main__":
 
     if mode == 'vocab':
         generate_vocab(args.file, args.vocab, cutoff=args.cutoff)
-        analyse_coverage_word_embedding(args.vocab, lang=args.lang)
+        # analyse_coverage_word_embedding(args.vocab, lang=args.lang)
     elif mode == 'pretrained':
         with open(args.vocab, 'rb') as f:
             vocab = pickle.load(f)

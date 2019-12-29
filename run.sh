@@ -104,13 +104,13 @@ elif [ $mode = 'vocab' ]; then
     echo "[!] Begin to generate the vocab"
     python utils.py \
         --mode vocab \
-        --cutoff 50000 \
+        --cutoff 100000 \
         --vocab ./processed/$dataset/iptvocab.pkl \
         --file ./data/$dataset/src-train.txt ./data/$dataset/src-dev.txt
 
     python utils.py \
         --mode vocab \
-        --cutoff 50000 \
+        --cutoff 100000 \
         --vocab ./processed/$dataset/optvocab.pkl \
         --file ./data/$dataset/tgt-train.txt ./data/$dataset/tgt-dev.txt
         
@@ -218,23 +218,23 @@ elif [ $mode = 'train' ]; then
         --dev_graph ./processed/$dataset/dev-graph.pkl \
         --pred ./processed/${dataset}/${model}/pred.txt \
         --min_threshold 0 \
-        --max_threshold 100 \
+        --max_threshold 50 \
         --seed 100 \
-        --epochs 100 \
+        --epochs 50 \
         --lr 5e-5 \
         --batch_size $batch_size \
-        --weight_decay 1e-6 \
+        --weight_decay 1e-7 \
         --model $model \
         --utter_n_layer 2 \
         --utter_hidden 500 \
-        --teach_force 1 \
+        --teach_force 0.5 \
         --context_hidden 500 \
         --decoder_hidden 500 \
         --embed_size $embed_size \
         --patience 5 \
         --dataset $dataset \
         --grad_clip 3 \
-        --dropout 0.3 \
+        --dropout 0.5 \
         --d_model $embed_size \
         --hierarchical $hierarchical \
         --transformer_decode $transformer_decode \
@@ -243,9 +243,9 @@ elif [ $mode = 'train' ]; then
         --maxlen $maxlen \
         --position_embed_size 30 \
         --context_threshold 2 \
-        --dynamic_tfr 100 \
+        --dynamic_tfr 40 \
         --dynamic_tfr_weight 0.05 \
-        --dynamic_tfr_counter 5 \
+        --dynamic_tfr_counter 2 \
         --dynamic_tfr_threshold 0.3 \
         --bleu perl \
         --contextrnn \
