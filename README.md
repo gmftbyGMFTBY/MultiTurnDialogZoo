@@ -4,7 +4,7 @@ Our motivation is to prove that explicit multi-round context modeling or explici
 
 ## Dataset 
 1. DailyDialog dataset
-2. Cornell movie
+2. Ubuntu corpus
 
 ## Metric
 1. PPL
@@ -62,7 +62,7 @@ Generate the graph of the dataset
 ./run.sh graph dailydialog zh none 0 
 ```
 
-Train the model (HRED / WSeq / Seq2Seq / Transformer / MReCoSa) on the dataset (dailydialog / cornell):
+Train the model (HRED / WSeq / Seq2Seq / Transformer / MReCoSa) on the dataset (dailydialog / Ubuntu):
 
 ```bash
 # train mode, dataset dailydialog, model HRED, pretrained [bert/none] on 4th GPU
@@ -204,7 +204,7 @@ Perturbate the source test dataset
 <table border="1" align="center">
   <tr>
     <th rowspan="2">Models</th>
-    <th colspan="8">Cornell</th>
+    <th colspan="8">Ubuntu</th>
   </tr>
   <tr>
     <td>PPL</td>
@@ -327,7 +327,7 @@ Perturbate the source test dataset
   <tr>
     <th rowspan="2">Models</th>
     <th colspan="4">DailyDialog</th>
-    <th colspan="4">Cornell</th>
+    <th colspan="4">Ubuntu</th>
   </tr>
   <tr>
     <td>PPL</td>
@@ -503,7 +503,7 @@ About the PPL analysis, make sure the teacher forcing ratio is less than 0.5, or
   </tr>
 </table>
             
-#### 6.2 Cornell
+#### 6.2 Ubuntu
         
 <table>
   <tr>

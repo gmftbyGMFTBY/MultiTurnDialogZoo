@@ -227,7 +227,7 @@ elif [ $mode = 'train' ]; then
         --model $model \
         --utter_n_layer 2 \
         --utter_hidden 500 \
-        --teach_force 0.5 \
+        --teach_force 1 \
         --context_hidden 500 \
         --decoder_hidden 500 \
         --embed_size $embed_size \
