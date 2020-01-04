@@ -12,8 +12,8 @@ Called by the train.py in the root folder
 dataset, model = sys.argv[1], sys.argv[2]
 if dataset not in ['cornell', 'dailydialog', 'ubuntu', 'zh50']:
     raise Exception(f'[!] dataset must in cornell, dailydialog, ubuntu, zh50. But got {dataset}')
-if model not in ['Seq2Seq', 'Transformer', 'HRED', 'WSeq', 'MReCoSa', 'MTGCN', 'GatedGCN']:
-    raise Exception(f'[!] model must in Seq2Seq, Transformer, HRED, WSeq, MReCoSa, MTGCN, GatedGCN. But got {model}')
+if model not in ['Seq2Seq', 'Transformer', 'HRED', 'WSeq', 'DSHRED', 'MReCoSa', 'MTGCN', 'GatedGCN']:
+    raise Exception(f'[!] model must in Seq2Seq, Transformer, HRED, DSHRED, WSeq, MReCoSa, MTGCN, GatedGCN. But got {model}')
 
 
 pred_p = f'./processed/{dataset}/{model}/pred.txt'

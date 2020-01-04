@@ -51,6 +51,7 @@ else
     graph=0
 fi
 
+
 # transformer decode mode
 if [ $model = 'ReCoSa' ]; then
     transformer_decode=1
