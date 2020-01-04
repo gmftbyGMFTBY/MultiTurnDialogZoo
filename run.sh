@@ -141,7 +141,7 @@ elif [ $mode = 'graph' ]; then
         --tgt ./data/$dataset/tgt-train.txt \
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
-        --graph ./processed/$dataset/train-graph.pkl \
+        --graph ./processed/$dataset/train-graph-no-correlation.pkl \
         --threshold 0.4 \
         --maxlen $maxlen \
         --no-bidir \
@@ -153,7 +153,7 @@ elif [ $mode = 'graph' ]; then
         --tgt ./data/$dataset/tgt-test.txt \
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
-        --graph ./processed/$dataset/test-graph.pkl \
+        --graph ./processed/$dataset/test-graph-no-correlation.pkl \
         --threshold 0.4 \
         --maxlen $maxlen \
         --no-bidir \
@@ -165,7 +165,7 @@ elif [ $mode = 'graph' ]; then
         --tgt ./data/$dataset/tgt-dev.txt \
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
-        --graph ./processed/$dataset/dev-graph.pkl \
+        --graph ./processed/$dataset/dev-graph-no-correlation.pkl \
         --threshold 0.4 \
         --maxlen $maxlen \
         --no-bidir \
@@ -218,9 +218,9 @@ elif [ $mode = 'train' ]; then
         --dev_graph ./processed/$dataset/dev-graph.pkl \
         --pred ./processed/${dataset}/${model}/pred.txt \
         --min_threshold 0 \
-        --max_threshold 50 \
+        --max_threshold 100 \
         --seed 100 \
-        --epochs 50 \
+        --epochs 100 \
         --lr 5e-5 \
         --batch_size $batch_size \
         --weight_decay 1e-7 \
@@ -243,10 +243,10 @@ elif [ $mode = 'train' ]; then
         --maxlen $maxlen \
         --position_embed_size 30 \
         --context_threshold 2 \
-        --dynamic_tfr 40 \
+        --dynamic_tfr 50 \
         --dynamic_tfr_weight 0.05 \
-        --dynamic_tfr_counter 2 \
-        --dynamic_tfr_threshold 0.3 \
+        --dynamic_tfr_counter 10 \
+        --dynamic_tfr_threshold 0.8 \
         --bleu perl \
         --contextrnn \
         --no-debug
@@ -265,7 +265,7 @@ elif [ $mode = 'translate' ]; then
         --src_test ./data/$dataset/src-test.txt \
         --tgt_test ./data/$dataset/tgt-test.txt \
         --min_threshold 0 \
-        --max_threshold 30 \
+        --max_threshold 100 \
         --batch_size $batch_size \
         --model $model \
         --utter_n_layer 2 \
@@ -299,7 +299,7 @@ elif [ $mode = 'translate' ]; then
             --src_test ./data/$dataset/src-test-perturbation-${i}.txt \
             --tgt_test ./data/$dataset/tgt-test.txt \
             --min_threshold 0 \
-            --max_threshold 30 \
+            --max_threshold 100 \
             --batch_size $batch_size \
             --model $model \
             --utter_n_layer 2 \

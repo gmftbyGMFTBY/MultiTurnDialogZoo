@@ -47,6 +47,15 @@ The `__eou__` is used to separate the multiple sentences in the conversation con
 More details can be found in the small data case.
 
 ## How to use
+Before running the following commands, make sure the essential folders are created:
+```bash
+# $DATASET contains the name of the dataset that you want to process
+mkdir -p processed/$DATASET
+mkdir -p data/$DATASET
+mkdir -p tblogs/$DATASET
+mkdir -p ckpt/$DATASET
+```
+
 Generate the vocab of the dataset
 
 ```bash
@@ -407,8 +416,6 @@ Note: More edges better performance
         
 ### 6. PPL Perturbation analyse
 More details of this experiment can be found in [ACL 2019 Short paper for context analyse in multi-turn dialogue systems](https://arxiv.org/pdf/1906.01603.pdf).
-        
-About the PPL analysis, make sure the teacher forcing ratio is less than 0.5, or the PPL of the model will be very high. In this paper, I set the teacher forcing ratio as 1 to make sure the process of converging is fast. If you want to reproduce the PPL perturbation results, make sure the teacher force ratio is low. For reference, the n-gram ppl is also shown.
         
         
 #### 6.1 Dailydialog
