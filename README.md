@@ -118,12 +118,12 @@ Perturbate the source test dataset
 ## Experiment
 
 ### 1. Models
-* __Seq2Seq__: seq2seq with attention
 * __HRED-attn__: hierarchical seq2seq model with attention on context encoder
 * __WSeq__: modified HRED model with the Cosine attention weight on conversation context
+* __DSHRED__: 2018 COLING Dynamic and Static attention for HRED
 * __ReCoSa__: 2019 ACL state-of-the-art generatice dialogue method, PPL is larger than the ReCoSa paper(ACL 2019) because of the more open dialogue topic (more open, harder to match with the ground-truth)
 * __MTGCN__: GCN for context modeling
-* __GatedGCN__: Gated GCN for context modeling
+* __GatedGCN__: Gated GCN for context modeling, in paper we called it **GatedGNN**
 
 ### 2. Automatic evaluation
 
@@ -292,6 +292,9 @@ Perturbate the source test dataset
     <td></td>
   </tr>
 </table>
+
+Performance Curve:
+
         
 ### 3. Human judgments
         
@@ -330,83 +333,8 @@ Perturbate the source test dataset
     <td></td>
   </tr>
 </table>
-        
-### 4. Layers of the GCNConv (GatedGCN)
-<table border="1" align="center">
-  <tr>
-    <th rowspan="2">Models</th>
-    <th colspan="4">DailyDialog</th>
-    <th colspan="4">Ubuntu</th>
-  </tr>
-  <tr>
-    <td>PPL</td>
-    <td>BLEU4</td> 
-    <td>Dist-1</td>
-    <td>Dist-2</td>
-    <td>PPL</td>
-    <td>BLEU4</td>
-    <td>Dist-1</td>
-    <td>Dist-2</td>
-  </tr>
-  <tr>
-    <td>GatedGCN(1)</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>GatedGCN(2)</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>GatedGCN(3)</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>GatedGCN(4)</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>GatedGCN(5)</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-</table>
 
-
-### 5. Graph ablation analyse
+### 4. Graph ablation analyse
 1. complete graph
 2. w/o user dependency edge
 3. w/o sequence dependency edge
@@ -414,11 +342,11 @@ Perturbate the source test dataset
         
 Note: More edges better performance
         
-### 6. PPL Perturbation analyse
+### 5. PPL Perturbation analyse
 More details of this experiment can be found in [ACL 2019 Short paper for context analyse in multi-turn dialogue systems](https://arxiv.org/pdf/1906.01603.pdf).
         
         
-#### 6.1 Dailydialog
+#### 5.1 Dailydialog
 <table>
   <tr>
     <th rowspan="2">Models</th>
@@ -510,7 +438,7 @@ More details of this experiment can be found in [ACL 2019 Short paper for contex
   </tr>
 </table>
             
-#### 6.2 Ubuntu
+#### 5.2 Ubuntu
         
 <table>
   <tr>
