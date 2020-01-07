@@ -337,7 +337,7 @@ def main(**kwargs):
                    pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
                    utter_n_layer=kwargs['utter_n_layer'], dropout=kwargs['dropout'],
                    pretrained=pretrained)
-    if kwargs['model'] == 'DSHRED':
+    elif kwargs['model'] == 'DSHRED':
         net = DSHRED(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
                      kwargs['utter_hidden'], kwargs['context_hidden'],
                      kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],

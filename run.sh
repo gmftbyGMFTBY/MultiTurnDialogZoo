@@ -53,12 +53,8 @@ fi
 
 
 # transformer decode mode
-if [ $model = 'ReCoSa' ]; then
+if [ $model = 'Transformer' ]; then
     transformer_decode=1
-elif [ $model = 'Transformer' ]; then
-    transformer_decode=1
-elif [ $model = 'MReCoSa' ]; then
-    transformer_decode=0
 else
     transformer_decode=0
 fi
@@ -138,7 +134,6 @@ elif [ $mode = 'stat' ]; then
         
 elif [ $mode = 'graph' ]; then
     # generate the graph file for the MTGCN model
-    
     python utils.py \
         --mode graph \
         --src ./data/$dataset/src-train.txt \
@@ -179,7 +174,18 @@ elif [ $mode = 'train' ]; then
     # cp -r ./ckpt/$dataset/$model ./bak/ckpt    # too big, stop back up it
     rm -rf ./ckpt/$dataset/$model
     mkdir -p ./ckpt/$dataset/$model
-    rm ./processed/$dataset/$model/ppl.txt
+    
+    if [ ! -d "./processed/$dataset/$model" ]; then
+        mkdir -p ./processed/$dataset/$model
+    else
+        echo "[!] ./processed/$dataset/$model: already exists"
+    fi
+    if [ ! -f "./processed/$dataset/$model/ppl.txt" ];then
+        echo "[!] ./processed/$dataset/$model/ppl.txt doesn't exist"
+    else
+        rm ./processed/$dataset/$model/ppl.txt
+    fi
+    
     cp -r tblogs/$dataset/ ./bak/tblogs
     rm tblogs/$dataset/$model/*
     
@@ -269,7 +275,7 @@ elif [ $mode = 'translate' ]; then
         --src_test ./data/$dataset/src-test.txt \
         --tgt_test ./data/$dataset/tgt-test.txt \
         --min_threshold 0 \
-        --max_threshold 100 \
+        --max_threshold 64 \
         --batch_size $batch_size \
         --model $model \
         --utter_n_layer 2 \
@@ -295,6 +301,7 @@ elif [ $mode = 'translate' ]; then
         --context_threshold 2 \
         --ppl origin
         
+    exit    # comment this line for ppl perturbation test, or only translate the test dataset 
     # 10 perturbation
     for i in {1..10}
     do

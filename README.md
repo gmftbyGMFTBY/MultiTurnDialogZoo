@@ -118,8 +118,8 @@ Perturbate the source test dataset
 ## Experiment
 
 ### 1. Models
-* __HRED-attn__: hierarchical seq2seq model with attention on context encoder
-* __WSeq__: modified HRED model with the Cosine attention weight on conversation context
+* __HRED-attn__: 2016 hierarchical seq2seq model with attention on context encoder
+* __WSeq__: 2017 ACL modified HRED model with the Cosine attention weight on conversation context
 * __DSHRED__: 2018 COLING Dynamic and Static attention for HRED
 * __ReCoSa__: 2019 ACL state-of-the-art generatice dialogue method, PPL is larger than the ReCoSa paper(ACL 2019) because of the more open dialogue topic (more open, harder to match with the ground-truth)
 * __MTGCN__: GCN for context modeling

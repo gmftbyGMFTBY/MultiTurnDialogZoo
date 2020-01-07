@@ -23,6 +23,7 @@ from model.seq2seq_attention import Seq2Seq
 from model.WSeq import WSeq
 from model.ReCoSa import ReCoSa
 from model.seq2seq_transformer import transformer
+from model.DSHRED import DSHRED
 from model.MReCoSa import MReCoSa
 from model.MTGCN import MTGCN
 from model.GCNRNN import GCNRNN
@@ -66,6 +67,13 @@ def translate(**kwargs):
                    kwargs['decoder_hidden'], pad=tgt_w2idx['<pad>'], 
                    sos=tgt_w2idx['<sos>'], utter_n_layer=kwargs['utter_n_layer'], 
                    pretrained=pretrained)
+    elif kwargs['model'] == 'DSHRED':
+        net = DSHRED(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
+                     kwargs['utter_hidden'], kwargs['context_hidden'],
+                     kwargs['decoder_hidden'],
+                     pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                     utter_n_layer=kwargs['utter_n_layer'], 
+                     pretrained=pretrained)
     elif kwargs['model'] == 'WSeq':
         net = WSeq(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
                    kwargs['utter_hidden'], kwargs['context_hidden'],
