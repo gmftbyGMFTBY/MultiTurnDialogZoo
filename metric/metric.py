@@ -2,6 +2,7 @@ from nltk.translate.bleu_score import sentence_bleu, corpus_bleu
 from nltk.translate.bleu_score import SmoothingFunction
 from nltk.collocations import BigramCollocationFinder
 from nltk.probability import FreqDist
+from .bleu import Bleu
 import argparse
 import codecs
 import numpy as np
@@ -11,19 +12,29 @@ from rouge import Rouge
 import os, re
 import ipdb
 
-def cal_BLEU(refer, candidate, ngram=1):
-    smoothie = SmoothingFunction().method2
-    if ngram == 1:
-        weight = (1, 0, 0, 0)
-    elif ngram == 2:
-        weight = (0.5, 0.5, 0, 0)
-    elif ngram == 3:
-        weight = (0.33, 0.33, 0.33, 0)
-    elif ngram == 4:
-        weight = (0.25, 0.25, 0.25, 0.25)
-    return sentence_bleu(refer, candidate, 
-                         weights=weight, 
-                         smoothing_function=smoothie)
+
+# BLEU of NLTK
+# def cal_BLEU(refer, candidate, ngram=1):
+#     smoothie = SmoothingFunction().method2
+#     if ngram == 1:
+#         weight = (1, 0, 0, 0)
+#     elif ngram == 2:
+#         weight = (0.5, 0.5, 0, 0)
+#     elif ngram == 3:
+#         weight = (0.33, 0.33, 0.33, 0)
+#     elif ngram == 4:
+#         weight = (0.25, 0.25, 0.25, 0.25)
+#     return sentence_bleu(refer, candidate, 
+#                          weights=weight, 
+#                          smoothing_function=smoothie)
+
+# BLEU of nlg-eval
+def cal_BLEU(refs, tgts):
+    scorer = Bleu(4)
+    refs = {idx: [line] for idx, line in enumerate(refs)}
+    tgts = {idx: [line] for idx, line in enumerate(tgts)}
+    s = scorer.compute_score(refs, tgts)
+    return s[0]
 
 
 def cal_BLEU_perl(dataset, model):
@@ -215,4 +226,23 @@ def cal_greedy_matching(x, y, dic):
 
 
 if __name__ == "__main__":
-    pass
+    path = './processed/dailydialog/GatedGCN-no-correlation/pred.txt'
+    with open(path) as f:
+        ref, tgt = [], []
+        for idx, line in enumerate(f.readlines()):
+            if idx % 4 == 1:
+                line = line.replace("user1", "").replace("user0", "").replace("- ref: ", "").replace('<sos>', '').replace('<eos>', '').strip()
+                ref.append(line.split())
+            elif idx % 4 == 2:
+                line = line.replace("user1", "").replace("user0", "").replace("- tgt: ", "").replace('<sos>', '').replace('<eos>', '').strip()
+                tgt.append(line.split())
+                
+    # Distinct-1, Distinct-2
+    candidates, references = [], []
+    for line1, line2 in zip(tgt, ref):
+        candidates.extend(line1)
+        references.extend(line2)
+    distinct_1, distinct_2 = cal_Distinct(candidates)
+    rdistinct_1, rdistinct_2 = cal_Distinct(references)
+    
+    print(distinct_1, distinct_2)

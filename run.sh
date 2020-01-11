@@ -16,6 +16,7 @@ if [ ! $model ]; then
 fi
 
 # hierarchical
+# no-role, no-corrleation, no-sequential for graph ablation study
 if [ $model = 'HRED' ]; then
     hierarchical=1
     graph=0
@@ -46,6 +47,15 @@ elif [ $model = 'GCNRNN' ]; then
 elif [ $model = 'GatedGCN' ]; then
     hierarchical=1
     graph=1
+elif [ $model = 'GatedGCN-no-role' ]; then
+    hierarchical=1
+    graph=1
+elif [ $model = 'GatedGCN-no-sequential' ]; then
+    hierarchical=1
+    graph=1
+elif [ $model = 'GatedGCN-no-correlation' ]; then
+    hierarchical=1
+    graph=1
 else
     hierarchical=0
     graph=0
@@ -65,7 +75,7 @@ if [ $hierarchical == 1 ]; then
     batch_size=64
 else
     maxlen=200
-    batch_size=32
+    batch_size=16
 fi
 
 # ========== Ready Perfectly ========== #
@@ -237,11 +247,11 @@ elif [ $mode = 'train' ]; then
         --model $model \
         --utter_n_layer 2 \
         --utter_hidden 500 \
-        --teach_force 1 \
+        --teach_force 0.6 \
         --context_hidden 500 \
         --decoder_hidden 500 \
         --embed_size $embed_size \
-        --patience 5 \
+        --patience 10 \
         --dataset $dataset \
         --grad_clip 3 \
         --dropout 0.5 \
@@ -256,8 +266,8 @@ elif [ $mode = 'train' ]; then
         --dynamic_tfr 50 \
         --dynamic_tfr_weight 0.05 \
         --dynamic_tfr_counter 10 \
-        --dynamic_tfr_threshold 0.8 \
-        --bleu perl \
+        --dynamic_tfr_threshold 0.4 \
+        --bleu nltk \
         --contextrnn \
         --no-debug
 
@@ -275,7 +285,7 @@ elif [ $mode = 'translate' ]; then
         --src_test ./data/$dataset/src-test.txt \
         --tgt_test ./data/$dataset/tgt-test.txt \
         --min_threshold 0 \
-        --max_threshold 64 \
+        --max_threshold 63 \
         --batch_size $batch_size \
         --model $model \
         --utter_n_layer 2 \
@@ -310,7 +320,7 @@ elif [ $mode = 'translate' ]; then
             --src_test ./data/$dataset/src-test-perturbation-${i}.txt \
             --tgt_test ./data/$dataset/tgt-test.txt \
             --min_threshold 0 \
-            --max_threshold 100 \
+            --max_threshold 63 \
             --batch_size $batch_size \
             --model $model \
             --utter_n_layer 2 \

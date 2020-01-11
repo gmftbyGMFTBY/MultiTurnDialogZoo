@@ -111,7 +111,7 @@ def translate(**kwargs):
                      kwargs['decoder_hidden'], kwargs['position_embed_size'],
                      pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
                      utter_n_layer=kwargs['utter_n_layer'])
-    elif kwargs['model'] == 'GatedGCN':
+    elif kwargs['model'] in ['GatedGCN', 'GatedGCN-no-role', 'GatedGCN-no-sequential', 'GatedGCN-no-correlation']:
         net = GatedGCN(len(src_w2idx), len(tgt_w2idx), kwargs['embed_size'],
                     kwargs['utter_hidden'], kwargs['context_hidden'],
                     kwargs['decoder_hidden'], kwargs['position_embed_size'],

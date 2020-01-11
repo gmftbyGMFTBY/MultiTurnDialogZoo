@@ -12,7 +12,7 @@ Called by the train.py in the root folder
 dataset, model = sys.argv[1], sys.argv[2]
 if dataset not in ['cornell', 'dailydialog', 'ubuntu', 'zh50']:
     raise Exception(f'[!] dataset must in cornell, dailydialog, ubuntu, zh50. But got {dataset}')
-if model not in ['Seq2Seq', 'Transformer', 'HRED', 'WSeq', 'DSHRED', 'MReCoSa', 'MTGCN', 'GatedGCN']:
+if model not in ['Seq2Seq', 'Transformer', 'HRED', 'WSeq', 'DSHRED', 'MReCoSa', 'MTGCN', 'GatedGCN', 'GatedGCN-no-sequential', 'GatedGCN-no-role', 'GatedGCN-no-correlation']:
     raise Exception(f'[!] model must in Seq2Seq, Transformer, HRED, DSHRED, WSeq, MReCoSa, MTGCN, GatedGCN. But got {model}')
 
 

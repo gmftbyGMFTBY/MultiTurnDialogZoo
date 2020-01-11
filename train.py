@@ -253,23 +253,18 @@ def write_into_tb(pred_path, writer, writer_str, epoch, ppl, bleu_mode, model, d
 
     assert len(ref) == len(tgt)
 
-    # BLEU and ROUGE
+    # ROUGE
     rouge_sum, bleu1_sum, bleu2_sum, bleu3_sum, bleu4_sum, counter = 0, 0, 0, 0, 0, 0
     for rr, cc in tqdm(list(zip(ref, tgt))):
         rouge_sum += cal_ROUGE(rr, cc)
-        bleu1_sum += cal_BLEU([rr], cc, ngram=1)
-        bleu2_sum += cal_BLEU([rr], cc, ngram=2)
-        bleu3_sum += cal_BLEU([rr], cc, ngram=3)
-        bleu4_sum += cal_BLEU([rr], cc, ngram=4)
         counter += 1
+    
+    # BlEU
+    refs, tgts = [' '.join(i) for i in ref], [' '.join(i) for i in tgt]
+    bleu1_sum, bleu2_sum, bleu3_sum, bleu4_sum = cal_BLEU(refs, tgts)
         
     if bleu_mode == 'perl':
         bleu1_sum, bleu2_sum, bleu3_sum, bleu4_sum = cal_BLEU_perl(dataset, model)
-    else:
-        bleu1_sum = bleu1_sum / counter
-        bleu2_sum = bleu2_sum / counter
-        bleu3_sum = bleu3_sum / counter
-        bleu4_sum = bleu4_sum / counter
 
     # Distinct-1, Distinct-2
     candidates, references = [], []
@@ -415,7 +410,6 @@ def main(**kwargs):
     print(f'[!] Optimizer Adam')
     optimizer = optim.Adam(net.parameters(), lr=kwargs['lr'], 
                            weight_decay=kwargs['weight_decay'])
-
     pbar = tqdm(range(1, kwargs['epochs'] + 1))
     training_loss, validation_loss = [], []
     min_loss = np.inf
@@ -464,13 +458,16 @@ def main(**kwargs):
                                               kwargs['batch_size'], kwargs['maxlen'])
 
         writer_str = f'{kwargs["dataset"]}'
-        train(train_iter, net, optimizer, len(tgt_w2idx), tgt_w2idx['<pad>'], 
-              grad_clip=kwargs['grad_clip'], debug=kwargs['debug'],
-              transformer_decode=kwargs['transformer_decode'], graph=kwargs['graph']==1)
+        train_loss = train(train_iter, net, optimizer, len(tgt_w2idx), tgt_w2idx['<pad>'], 
+                           grad_clip=kwargs['grad_clip'], debug=kwargs['debug'],
+                           transformer_decode=kwargs['transformer_decode'],
+                           graph=kwargs['graph']==1)
         val_loss = validation(dev_iter, net, len(tgt_w2idx), tgt_w2idx['<pad>'],
                               transformer_decode=kwargs['transformer_decode'],
                               graph=kwargs['graph']==1)
-        # add scalar to tensorboard
+        
+        # add loss scalar to tensorboard
+        writer.add_scalar(f'{writer_str}-Loss/train', train_loss, epoch)
         writer.add_scalar(f'{writer_str}-Loss/dev', val_loss, epoch)
 
         if not best_val_loss or val_loss < best_val_loss:
@@ -479,21 +476,23 @@ def main(**kwargs):
         else:
             patience += 1
                           
-        state = {'net': net.state_dict(), 'epoch': epoch}
+        # checkpoint state
+        state = {'net': net.state_dict(), 'opt': optimizer.state_dict(), 
+                 'epoch': epoch, 'patience': patience}
         torch.save(state, 
                        f'./ckpt/{kwargs["dataset"]}/{kwargs["model"]}/vloss_{val_loss}_epoch_{epoch}.pt')
 
-        # if patience > kwargs['patience']:
-        #     print(f'Early Stop {kwargs["patience"]} at epoch {epoch}')
-        #     break
+        if patience > kwargs['patience']:
+            print(f'Early Stop {kwargs["patience"]} at epoch {epoch}')
+            break
         
         # translate on test dataset
         ppl = translate(test_iter, net, **kwargs)
         
-        # measure the performance, write into the tensorboard
+        # write the performance into the tensorboard
         write_into_tb(kwargs['pred'], writer, writer_str, epoch, ppl, kwargs['bleu'], kwargs['model'], kwargs['dataset'])
         
-        pbar.set_description(f'Epoch: {epoch}, tfr: {round(teacher_force_ratio, 4)}, val_loss: {val_loss}, val_ppl: {round(math.exp(val_loss), 4)}, patience: {patience}/{kwargs["patience"]}')
+        pbar.set_description(f'Epoch: {epoch}, tfr: {round(teacher_force_ratio, 4)}, loss(train/dev): {train_loss}/{val_loss}, val_ppl: {round(math.exp(val_loss), 4)}, patience: {patience}/{kwargs["patience"]}')
         
         # dynamic teach_force_ratio
         if epoch > kwargs["dynamic_tfr"]:
@@ -508,6 +507,7 @@ def main(**kwargs):
 
     pbar.close()
     writer.close()
+    print(f'[!] Done')
 
 
 
