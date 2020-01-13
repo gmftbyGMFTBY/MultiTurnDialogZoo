@@ -171,15 +171,17 @@ class Seq2Seq(nn.Module):
         encoder_output, hidden = self.encoder(src, lengths)
         output = tgt[0, :]
         
-        for t in range(1, max_len):
-            output, hidden = self.decoder(output, hidden, encoder_output)
-            outputs[t] = output
-            is_teacher = np.random.rand() < self.teach_force
-            top1 = torch.max(output, 1)[1]
-            if is_teacher:
+        use_teacher = random.random() < self.teach_force
+        if use_teacher:
+            for t in range(1, max_len):
+                output, hidden = self.decoder(output, hidden, encoder_output)
+                outputs[t] = output
                 output = tgt[t].clone().detach()
-            else:
-                output = top1
+        else:
+            for t in range(1, max_len):
+                output, hidden = self.decoder(output, hidden, encoder_output)
+                outputs[t] = output
+                output = torch.max(output, 1)[1]
         
         # [max_len, batch, output_size]
         return outputs

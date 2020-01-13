@@ -207,16 +207,18 @@ class HRED(nn.Module):
         # tgt = tgt.transpose(0, 1)        # [seq_len, batch]
         hidden = hidden.unsqueeze(0)     # [1, batch, hidden_size]
         output = tgt[0, :]          # [batch]
-
-        for i in range(1, maxlen):
-            output, hidden = self.decoder(output, hidden, context_output)
-            outputs[i] = output
-            is_teacher = random.random() < self.teach_force
-            top1 = output.data.max(1)[1]
-            if is_teacher:
-                output = tgt[i].clone().detach()
-            else:
-                output = top1
+        
+        use_teacher = random.random() < self.teach_force
+        if use_teacher:
+            for t in range(1, maxlen):
+                output, hidden = self.decoder(output, hidden, context_output)
+                outputs[t] = output
+                output = tgt[t].clone().detach()
+        else:
+            for t in range(1, maxlen):
+                output, hidden = self.decoder(output, hidden, context_output)
+                outputs[t] = output
+                output = torch.max(output, 1)[1]
         return outputs    # [maxlen, batch, vocab_size]
 
 

@@ -408,8 +408,7 @@ def main(**kwargs):
     #    optimizer = get_std_opt(net)
     # else:
     print(f'[!] Optimizer Adam')
-    optimizer = optim.Adam(net.parameters(), lr=kwargs['lr'], 
-                           weight_decay=kwargs['weight_decay'])
+    optimizer = optim.Adam(net.parameters(), lr=kwargs['lr'])
     pbar = tqdm(range(1, kwargs['epochs'] + 1))
     training_loss, validation_loss = [], []
     min_loss = np.inf
@@ -525,7 +524,6 @@ if __name__ == "__main__":
                         help='epoch threshold for loading best model')
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
     parser.add_argument('--batch_size', type=int, default=16, help='batch size')
-    parser.add_argument('--weight_decay', type=float, default=1e-6, help='weight decay')
     parser.add_argument('--model', type=str, default='HRED', help='model to be trained')
     parser.add_argument('--utter_hidden', type=int, default=150, 
                         help='utterance encoder hidden size')

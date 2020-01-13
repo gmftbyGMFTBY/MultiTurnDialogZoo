@@ -114,13 +114,13 @@ elif [ $mode = 'vocab' ]; then
     echo "[!] Begin to generate the vocab"
     python utils.py \
         --mode vocab \
-        --cutoff 100000 \
+        --cutoff 20000 \
         --vocab ./processed/$dataset/iptvocab.pkl \
         --file ./data/$dataset/src-train.txt ./data/$dataset/src-dev.txt
 
     python utils.py \
         --mode vocab \
-        --cutoff 100000 \
+        --cutoff 20000 \
         --vocab ./processed/$dataset/optvocab.pkl \
         --file ./data/$dataset/tgt-train.txt ./data/$dataset/tgt-dev.txt
         
@@ -241,20 +241,19 @@ elif [ $mode = 'train' ]; then
         --max_threshold 100 \
         --seed 100 \
         --epochs 100 \
-        --lr 5e-5 \
+        --lr 5e-4 \
         --batch_size $batch_size \
-        --weight_decay 1e-7 \
         --model $model \
         --utter_n_layer 2 \
         --utter_hidden 500 \
-        --teach_force 0.6 \
+        --teach_force 0.3 \
         --context_hidden 500 \
         --decoder_hidden 500 \
         --embed_size $embed_size \
         --patience 10 \
         --dataset $dataset \
-        --grad_clip 3 \
-        --dropout 0.5 \
+        --grad_clip 10.0 \
+        --dropout 0.3 \
         --d_model $embed_size \
         --hierarchical $hierarchical \
         --transformer_decode $transformer_decode \
@@ -263,10 +262,10 @@ elif [ $mode = 'train' ]; then
         --maxlen $maxlen \
         --position_embed_size 30 \
         --context_threshold 2 \
-        --dynamic_tfr 50 \
+        --dynamic_tfr 30 \
         --dynamic_tfr_weight 0.05 \
-        --dynamic_tfr_counter 10 \
-        --dynamic_tfr_threshold 0.4 \
+        --dynamic_tfr_counter 5 \
+        --dynamic_tfr_threshold 0.0 \
         --bleu nltk \
         --contextrnn \
         --no-debug

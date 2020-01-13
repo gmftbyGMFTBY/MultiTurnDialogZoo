@@ -5,6 +5,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
+from tqdm import tqdm
 from utils import *
 import ipdb
 import random
@@ -54,7 +55,7 @@ def load_data_flatten(src, tgt, src_vocab, tgt_vocab, maxlen):
     def load_(filename, w2idx):
         with open(filename) as f:
             dataset = []
-            for line in f.readlines():
+            for line in tqdm(f.readlines()):
                 if '<user0>' in line: user_c = '<user0>'
                 elif '<user1>' in line: user_c = '<user1>'
                 line = line.replace(user_c, '').strip()
