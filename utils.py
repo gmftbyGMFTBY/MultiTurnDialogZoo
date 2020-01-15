@@ -31,10 +31,15 @@ from nltk.lm import MLE, Lidstone
 
 
 def clean(s):
+    # this pattern are defined for cleaning the dailydialog dataset
     s = s.strip().lower()
+    s = re.sub(r'(\w+)\.(\w+)', r'\1 . \2', s)
     s = re.sub(r'[0-9]+(\.[0-9]+)?', r'1', s)
     s = s.replace('。', '.')
     s = s.replace(';', ',')
+    s = s.replace(' p . m . ', ' pm ')
+    s = s.replace(' P . m . ', ' pm ')
+    s = s.replace(' a . m . ', ' am ')
     return s
 
 # ========== calculate the N-gram perplexity ========== #
@@ -316,10 +321,10 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
             for utterance in utterances:
                 if '<user0>' in utterance: user_c, user_cr = '<user0>', 'user0'
                 elif '<user1>' in utterance: user_c, user_cr = '<user1>', 'user1'
-                utterance = utterance.replace(user_c, user_cr).strip()
+                utterance = utterance.replace(user_c, '').strip()
                 line = [src_w2idx['<sos>']] + [src_w2idx.get(w, src_w2idx['<unk>']) for w in nltk.word_tokenize(utterance)] + [src_w2idx['<eos>']]
                 if len(line) > maxlen:
-                    line = [src_w2idx['<sos>'], line[1]] + line[-maxlen:]
+                    line = [src_w2idx['<sos>']] + line[-maxlen:]
                 turn.append(line)
                 srcu.append(user_vocab.index(user_cr))
             src_dataset.append(turn)
@@ -332,10 +337,10 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
             line = clean(line)
             if '<user0>' in line: user_c, user_cr = '<user0>', 'user0'
             elif '<user1>' in line: user_c, user_cr = '<user1>', 'user1'
-            line = line.replace(user_c, user_cr).strip()
+            line = line.replace(user_c, '').strip()
             line = [tgt_w2idx['<sos>']] + [tgt_w2idx.get(w, tgt_w2idx['<unk>']) for w in nltk.word_tokenize(line)] + [tgt_w2idx['<eos>']]
             if len(line) > maxlen:
-                line = [tgt_w2idx['<sos>'], line[1]] + line[-maxlen:]
+                line = [tgt_w2idx['<sos>']] + line[-maxlen:]
             tgt_dataset.append(line)
             tgt_user.append(user_vocab.index(user_cr))
  

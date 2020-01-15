@@ -319,6 +319,8 @@ def main(**kwargs):
     src_vocab, tgt_vocab = load_pickle(kwargs['src_vocab']), load_pickle(kwargs['tgt_vocab'])
     src_w2idx, src_idx2w = src_vocab
     tgt_w2idx, tgt_idx2w = tgt_vocab
+    
+    print(f'[!] load vocab over, src/tgt vocab size: {len(src_idx2w)}/{len(tgt_idx2w)}')
 
     # pretrained path
     if kwargs['pretrained'] == 'bert':
@@ -471,11 +473,13 @@ def main(**kwargs):
                               graph=kwargs['graph']==1)
         
         # add loss scalar to tensorboard
-        # and write the lr schedule
+        # and write the lr schedule, and teach force
         writer.add_scalar(f'{writer_str}-Loss/train', train_loss, epoch)
         writer.add_scalar(f'{writer_str}-Loss/dev', val_loss, epoch)
         writer.add_scalar(f'{writer_str}-Loss/lr', 
-                          optimizer.state_dict()['param_groups'][0]['lr'] , 
+                          optimizer.state_dict()['param_groups'][0]['lr'], 
+                          epoch)
+        writer.add_scalar(f'{writer_str}-Loss/teach', net.teach_force,
                           epoch)
         
         if not best_val_loss or val_loss < best_val_loss:
@@ -511,6 +515,9 @@ def main(**kwargs):
             else:
                 holder -= 1
             net.teach_force = teacher_force_ratio
+        
+        # lr schedule change
+        scheduler.step()
         
 
     pbar.close()

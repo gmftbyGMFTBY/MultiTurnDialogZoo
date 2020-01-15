@@ -72,7 +72,7 @@ fi
 # maxlen and batch_size
 if [ $hierarchical == 1 ]; then
     maxlen=50
-    batch_size=64
+    batch_size=128
 else
     maxlen=200
     batch_size=16
@@ -238,10 +238,10 @@ elif [ $mode = 'train' ]; then
         --dev_graph ./processed/$dataset/dev-graph.pkl \
         --pred ./processed/${dataset}/${model}/pred.txt \
         --min_threshold 0 \
-        --max_threshold 100 \
+        --max_threshold 150 \
         --seed 123 \
         --epochs 150 \
-        --lr 1e-3 \
+        --lr 1e-4 \
         --batch_size $batch_size \
         --model $model \
         --utter_n_layer 2 \
@@ -253,7 +253,7 @@ elif [ $mode = 'train' ]; then
         --patience 10 \
         --dataset $dataset \
         --grad_clip 10.0 \
-        --dropout 0.6 \
+        --dropout 0.5 \
         --d_model $embed_size \
         --hierarchical $hierarchical \
         --transformer_decode $transformer_decode \
@@ -262,22 +262,22 @@ elif [ $mode = 'train' ]; then
         --maxlen $maxlen \
         --position_embed_size 30 \
         --context_threshold 2 \
-        --dynamic_tfr 10 \
-        --dynamic_tfr_weight 0.05 \
-        --dynamic_tfr_counter 5 \
-        --dynamic_tfr_threshold 0.1 \
+        --dynamic_tfr 20 \
+        --dynamic_tfr_weight 0.1 \
+        --dynamic_tfr_counter 10 \
+        --dynamic_tfr_threshold 0.0 \
         --bleu nltk \
         --contextrnn \
         --no-debug \
-        --lr_step 5 \
-        --lr_gamma 0.8 \
+        --lr_step 20 \
+        --lr_gamma 0.3 \
 
 elif [ $mode = 'translate' ]; then
     
     if [ $pretrained = 'bert' ]; then
         embed_size=768
     else
-        embed_size=300
+        embed_size=500
     fi
     
     rm ./processed/$dataset/$model/ppl.txt
