@@ -56,11 +56,13 @@ def load_data_flatten(src, tgt, src_vocab, tgt_vocab, maxlen):
         with open(filename) as f:
             dataset = []
             for line in tqdm(f.readlines()):
+                line = clean(line)
                 if '<user0>' in line: user_c = '<user0>'
                 elif '<user1>' in line: user_c = '<user1>'
                 line = line.replace(user_c, '').strip()
                 line = [w2idx['<sos>']] + [w2idx.get(w, w2idx['<unk>']) for w in nltk.word_tokenize(line)] + [w2idx['<eos>']]
-                line = [w2idx['<sos>']] + line[-maxlen:]
+                if len(line) > maxlen:
+                    line = [w2idx['<sos>']] + line[-maxlen:]
                 dataset.append(line)
         return dataset
 
@@ -294,10 +296,12 @@ def get_batch_data_graph(src, tgt, graph, src_vocab, tgt_vocab,
 
 if __name__ == "__main__":
     batch_num = 0
-    for sbatch, tbatch, turn_lengths in get_batch_data('./data/dailydialog/src-train.txt', 
+    src_w2idx, src_idx2w = load_pickle('./processed/dailydialog/iptvocab.pkl')
+    tgt_w2idx, tgt_idx2w = load_pickle('./processed/dailydialog/optvocab.pkl')
+    for sbatch, tbatch, turn_lengths in get_batch_data_flatten('./data/dailydialog/src-train.txt', 
             './data/dailydialog/tgt-train.txt',
-                                         './processed/dailydialog/HRED/iptvocab.pkl',
-                                         './processed/dailydialog/HRED/optvocab.pkl',
+                                         './processed/dailydialog/iptvocab.pkl',
+                                         './processed/dailydialog/optvocab.pkl',
                                          32, 50):
         print(len(sbatch), tbatch.shape, turn_lengths.shape)
         # if len(sbatch) == 3:

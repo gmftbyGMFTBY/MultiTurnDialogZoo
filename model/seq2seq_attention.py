@@ -176,12 +176,13 @@ class Seq2Seq(nn.Module):
             for t in range(1, max_len):
                 output, hidden = self.decoder(output, hidden, encoder_output)
                 outputs[t] = output
-                output = tgt[t].clone().detach()
+                output = tgt[t]
         else:
             for t in range(1, max_len):
                 output, hidden = self.decoder(output, hidden, encoder_output)
                 outputs[t] = output
-                output = torch.max(output, 1)[1]
+                # output = torch.max(output, 1)[1]
+                output = output.topk(1)[1].squeeze().detach()
         
         # [max_len, batch, output_size]
         return outputs
@@ -202,7 +203,8 @@ class Seq2Seq(nn.Module):
         for t in range(1, maxlen):
             output, hidden = self.decoder(output, hidden, encoder_output)
             floss[t] = output
-            output = torch.max(output, 1)[1]    # [1]
+            # output = torch.max(output, 1)[1]    # [1]
+            output = output.topk(1)[1].squeeze().detach()
             outputs[t] = output    # output: [1, output_size]
         
         if loss:

@@ -116,13 +116,13 @@ elif [ $mode = 'vocab' ]; then
         --mode vocab \
         --cutoff 20000 \
         --vocab ./processed/$dataset/iptvocab.pkl \
-        --file ./data/$dataset/src-train.txt ./data/$dataset/src-dev.txt
+        --file ./data/$dataset/src-train.txt
 
     python utils.py \
         --mode vocab \
         --cutoff 20000 \
         --vocab ./processed/$dataset/optvocab.pkl \
-        --file ./data/$dataset/tgt-train.txt ./data/$dataset/tgt-dev.txt
+        --file ./data/$dataset/tgt-train.txt
         
 elif [ $mode = 'stat' ]; then
     # analyse the graph information in the dataset
@@ -218,7 +218,7 @@ elif [ $mode = 'train' ]; then
         embed_size=768
     else
         echo "[!] Donot use the pretrained embedding"
-        embed_size=300
+        embed_size=500
     fi
     
     # Train
@@ -239,21 +239,21 @@ elif [ $mode = 'train' ]; then
         --pred ./processed/${dataset}/${model}/pred.txt \
         --min_threshold 0 \
         --max_threshold 100 \
-        --seed 100 \
-        --epochs 100 \
-        --lr 5e-4 \
+        --seed 123 \
+        --epochs 150 \
+        --lr 1e-3 \
         --batch_size $batch_size \
         --model $model \
         --utter_n_layer 2 \
         --utter_hidden 500 \
-        --teach_force 0.3 \
+        --teach_force 0.5 \
         --context_hidden 500 \
         --decoder_hidden 500 \
         --embed_size $embed_size \
         --patience 10 \
         --dataset $dataset \
         --grad_clip 10.0 \
-        --dropout 0.3 \
+        --dropout 0.6 \
         --d_model $embed_size \
         --hierarchical $hierarchical \
         --transformer_decode $transformer_decode \
@@ -262,13 +262,15 @@ elif [ $mode = 'train' ]; then
         --maxlen $maxlen \
         --position_embed_size 30 \
         --context_threshold 2 \
-        --dynamic_tfr 30 \
+        --dynamic_tfr 10 \
         --dynamic_tfr_weight 0.05 \
         --dynamic_tfr_counter 5 \
-        --dynamic_tfr_threshold 0.0 \
+        --dynamic_tfr_threshold 0.1 \
         --bleu nltk \
         --contextrnn \
-        --no-debug
+        --no-debug \
+        --lr_step 5 \
+        --lr_gamma 0.8 \
 
 elif [ $mode = 'translate' ]; then
     

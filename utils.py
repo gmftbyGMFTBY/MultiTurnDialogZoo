@@ -11,6 +11,7 @@ import argparse
 from collections import Counter
 import pickle
 import os
+import re
 import torch
 import ipdb
 import random
@@ -28,6 +29,13 @@ from nltk.lm.preprocessing import flatten
 from nltk.lm.preprocessing import padded_everygram_pipeline
 from nltk.lm import MLE, Lidstone
 
+
+def clean(s):
+    s = s.strip().lower()
+    s = re.sub(r'[0-9]+(\.[0-9]+)?', r'1', s)
+    s = s.replace('。', '.')
+    s = s.replace(';', ',')
+    return s
 
 # ========== calculate the N-gram perplexity ========== #
 def train_ngram_lm(dataset, data, ngram=3, gamma=0.5):
@@ -168,13 +176,14 @@ def generate_vocab(files, vocab, cutoff=50000):
     for file in files:
         with open(file) as f:
             for line in tqdm(f.readlines()):
-                words.extend(nltk.word_tokenize(line))
+                line = clean(line)
+                list_words = nltk.word_tokenize(line)
+                words.extend(list_words)
     words = Counter(words)
     print(f'[!] whole vocab size: {len(words)}')
     words = words.most_common(cutoff)
-    # special token, start of dialog (sod) and end of dialog (eod)
-    words.extend([('<sod>', 1), ('<eod>', 1), 
-                  ('<sos>', 1), ('<eos>', 1), 
+    # special token
+    words.extend([('<sos>', 1), ('<eos>', 1), 
                   ('<unk>', 1), ('<pad>', 1),])
     w2idx = {item[0]:idx for idx, item in enumerate(words)}
     idx2w = [item[0] for item in words]
@@ -300,6 +309,7 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
     with open(src) as f:
         src_dataset = []
         for line in tqdm(f.readlines()):
+            line = clean(line)
             utterances = line.split('__eou__')    # only for chinese (zh50)
             turn = []
             srcu = []
@@ -319,6 +329,7 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
     with open(tgt) as f:
         tgt_dataset = []
         for line in tqdm(f.readlines()):
+            line = clean(line)
             if '<user0>' in line: user_c, user_cr = '<user0>', 'user0'
             elif '<user1>' in line: user_c, user_cr = '<user1>', 'user1'
             line = line.replace(user_c, user_cr).strip()

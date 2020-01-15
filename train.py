@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
+from torch.optim import lr_scheduler
 import torch.optim as optim
 import random
 import numpy as np
@@ -123,7 +124,7 @@ def validation(data_iter, net, vocab_size, pad,
         total_loss += loss.item()
         batch_num += 1
         
-        pbar.set_description(f'batch {idx}, dev/test loss: {round(loss.item(), 4)}')
+        pbar.set_description(f'batch {idx}, dev loss: {round(loss.item(), 4)}')
 
         if debug:
             # show the output result, output: [length, batch, vocab_size]
@@ -233,7 +234,7 @@ def translate(data_iter, net, **kwargs):
                         
     l = round(total_loss / batch_num, 4)
     print(f'[!] write the translate result into {kwargs["pred"]}')
-    print(f'[!] loss: {l}, ppl: {round(math.exp(l), 4)}', 
+    print(f'[!] test loss: {l}, test ppl: {round(math.exp(l), 4)}', 
           file=open(f'./processed/{kwargs["dataset"]}/{kwargs["model"]}/ppl.txt', 'a'))
     
     return math.exp(l)
@@ -241,6 +242,7 @@ def translate(data_iter, net, **kwargs):
     
 def write_into_tb(pred_path, writer, writer_str, epoch, ppl, bleu_mode, model, dataset):
     # obtain the performance
+    print(f'[!] measure the performance and write into tensorboard')
     with open(pred_path) as f:
         ref, tgt = [], []
         for idx, line in enumerate(f.readlines()):
@@ -409,6 +411,9 @@ def main(**kwargs):
     # else:
     print(f'[!] Optimizer Adam')
     optimizer = optim.Adam(net.parameters(), lr=kwargs['lr'])
+    scheduler = lr_scheduler.StepLR(optimizer, 
+                                    step_size=kwargs['lr_step'],
+                                    gamma=kwargs['lr_gamma'])
     pbar = tqdm(range(1, kwargs['epochs'] + 1))
     training_loss, validation_loss = [], []
     min_loss = np.inf
@@ -466,9 +471,13 @@ def main(**kwargs):
                               graph=kwargs['graph']==1)
         
         # add loss scalar to tensorboard
+        # and write the lr schedule
         writer.add_scalar(f'{writer_str}-Loss/train', train_loss, epoch)
         writer.add_scalar(f'{writer_str}-Loss/dev', val_loss, epoch)
-
+        writer.add_scalar(f'{writer_str}-Loss/lr', 
+                          optimizer.state_dict()['param_groups'][0]['lr'] , 
+                          epoch)
+        
         if not best_val_loss or val_loss < best_val_loss:
             best_val_loss = val_loss
             patience = 0
@@ -481,9 +490,9 @@ def main(**kwargs):
         torch.save(state, 
                        f'./ckpt/{kwargs["dataset"]}/{kwargs["model"]}/vloss_{val_loss}_epoch_{epoch}.pt')
 
-        if patience > kwargs['patience']:
-            print(f'Early Stop {kwargs["patience"]} at epoch {epoch}')
-            break
+        # if patience > kwargs['patience']:
+        #     print(f'Early Stop {kwargs["patience"]} at epoch {epoch}')
+        #     break
         
         # translate on test dataset
         ppl = translate(test_iter, net, **kwargs)
@@ -580,6 +589,8 @@ if __name__ == "__main__":
     parser.add_argument('--dynamic_tfr_counter', type=int, default=5)
     parser.add_argument('--dynamic_tfr_threshold', type=float, default=0.3)
     parser.add_argument('--bleu', type=str, default='nltk', help='nlkt or perl')
+    parser.add_argument('--lr_step', type=int, default=5, help='lr schedule step')
+    parser.add_argument('--lr_gamma', type=float, default=0.8, help='lr schedule gamma factor')
 
 
     args = parser.parse_args()
