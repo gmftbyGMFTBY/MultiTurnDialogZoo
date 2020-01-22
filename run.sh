@@ -239,14 +239,14 @@ elif [ $mode = 'train' ]; then
         --pred ./processed/${dataset}/${model}/pred.txt \
         --min_threshold 0 \
         --max_threshold 150 \
-        --seed 123 \
+        --seed 100 \
         --epochs 150 \
         --lr 1e-4 \
         --batch_size $batch_size \
         --model $model \
         --utter_n_layer 2 \
         --utter_hidden 500 \
-        --teach_force 0.5 \
+        --teach_force 1 \
         --context_hidden 500 \
         --decoder_hidden 500 \
         --embed_size $embed_size \
@@ -263,8 +263,8 @@ elif [ $mode = 'train' ]; then
         --position_embed_size 30 \
         --context_threshold 2 \
         --dynamic_tfr 20 \
-        --dynamic_tfr_weight 0.1 \
-        --dynamic_tfr_counter 10 \
+        --dynamic_tfr_weight 0.4 \
+        --dynamic_tfr_counter 40 \
         --dynamic_tfr_threshold 0.0 \
         --bleu nltk \
         --contextrnn \

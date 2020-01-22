@@ -303,6 +303,7 @@ if __name__ == "__main__":
                                          './processed/dailydialog/iptvocab.pkl',
                                          './processed/dailydialog/optvocab.pkl',
                                          32, 50):
+        ipdb.set_trace()
         print(len(sbatch), tbatch.shape, turn_lengths.shape)
         # if len(sbatch) == 3:
         #     ipdb.set_trace()

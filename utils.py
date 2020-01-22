@@ -34,12 +34,16 @@ def clean(s):
     # this pattern are defined for cleaning the dailydialog dataset
     s = s.strip().lower()
     s = re.sub(r'(\w+)\.(\w+)', r'\1 . \2', s)
+    s = re.sub(r'(\w+)-(\w+)', r'\1 \2', s)
     s = re.sub(r'[0-9]+(\.[0-9]+)?', r'1', s)
     s = s.replace('。', '.')
     s = s.replace(';', ',')
     s = s.replace(' p . m . ', ' pm ')
     s = s.replace(' P . m . ', ' pm ')
     s = s.replace(' a . m . ', ' am ')
+    
+    # this pattern are defined for cleaning the ubuntu dataset
+    # ....
     return s
 
 # ========== calculate the N-gram perplexity ========== #

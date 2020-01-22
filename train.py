@@ -423,7 +423,8 @@ def main(**kwargs):
     best_val_loss = None
     teacher_force_ratio = kwargs['teach_force']    # default 1
     teacher_force_ratio_counter = kwargs['dynamic_tfr_counter']
-    holder = teacher_force_ratio_counter
+    # holder = teacher_force_ratio_counter
+    holder = 0
 
     # train
     for epoch in pbar:
