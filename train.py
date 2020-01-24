@@ -505,7 +505,7 @@ def main(**kwargs):
         # write the performance into the tensorboard
         write_into_tb(kwargs['pred'], writer, writer_str, epoch, ppl, kwargs['bleu'], kwargs['model'], kwargs['dataset'])
         
-        pbar.set_description(f'Epoch: {epoch}, tfr: {round(teacher_force_ratio, 4)}, loss(train/dev): {train_loss}/{val_loss}, val_ppl: {round(math.exp(val_loss), 4)}, patience: {patience}/{kwargs["patience"]}')
+        pbar.set_description(f'Epoch: {epoch}, tfr: {round(teacher_force_ratio, 4)}, loss(train/dev): {train_loss}/{val_loss}, ppl(dev/test): {round(math.exp(val_loss), 4)}/{round(ppl, 4)}, patience: {patience}/{kwargs["patience"]}')
         
         # dynamic teach_force_ratio
         if epoch > kwargs["dynamic_tfr"]:

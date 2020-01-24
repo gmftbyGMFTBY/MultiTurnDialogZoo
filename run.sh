@@ -238,9 +238,9 @@ elif [ $mode = 'train' ]; then
         --dev_graph ./processed/$dataset/dev-graph.pkl \
         --pred ./processed/${dataset}/${model}/pred.txt \
         --min_threshold 0 \
-        --max_threshold 150 \
-        --seed 100 \
-        --epochs 150 \
+        --max_threshold 100 \
+        --seed 20 \
+        --epochs 100 \
         --lr 1e-4 \
         --batch_size $batch_size \
         --model $model \
@@ -253,7 +253,7 @@ elif [ $mode = 'train' ]; then
         --patience 10 \
         --dataset $dataset \
         --grad_clip 10.0 \
-        --dropout 0.5 \
+        --dropout 0.3 \
         --d_model $embed_size \
         --hierarchical $hierarchical \
         --transformer_decode $transformer_decode \
@@ -262,15 +262,15 @@ elif [ $mode = 'train' ]; then
         --maxlen $maxlen \
         --position_embed_size 30 \
         --context_threshold 2 \
-        --dynamic_tfr 20 \
-        --dynamic_tfr_weight 0.4 \
-        --dynamic_tfr_counter 40 \
-        --dynamic_tfr_threshold 0.0 \
+        --dynamic_tfr 10 \
+        --dynamic_tfr_weight 0.1 \
+        --dynamic_tfr_counter 10 \
+        --dynamic_tfr_threshold 0.5 \
         --bleu nltk \
         --contextrnn \
         --no-debug \
         --lr_step 20 \
-        --lr_gamma 0.3 \
+        --lr_gamma 0.5 \
 
 elif [ $mode = 'translate' ]; then
     
