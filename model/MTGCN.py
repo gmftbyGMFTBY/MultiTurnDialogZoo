@@ -39,15 +39,14 @@ class Utterance_encoder_mt(nn.Module):
         self.embed = nn.Embedding(input_size, self.embedding_size)
         self.gru = nn.GRU(self.embedding_size, self.hidden_size, num_layers=n_layer, 
                           dropout=dropout, bidirectional=True)
-        self.hidden_proj = nn.Linear(n_layer * 2 * self.hidden_size, hidden_size)
-        self.bn = nn.BatchNorm1d(num_features=hidden_size)
+        # self.hidden_proj = nn.Linear(n_layer * 2 * self.hidden_size, hidden_size)
+        # self.bn = nn.BatchNorm1d(num_features=hidden_size)
 
         self.init_weight()
 
     def init_weight(self):
-        init.xavier_normal_(self.hidden_proj.weight)
-        init.orthogonal_(self.gru.weight_hh_l0)
-        init.orthogonal_(self.gru.weight_ih_l0)
+        init.xavier_normal_(self.gru.weight_hh_l0)
+        init.xavier_normal_(self.gru.weight_ih_l0)
         self.gru.bias_ih_l0.data.fill_(0.0)
         self.gru.bias_hh_l0.data.fill_(0.0)
 
@@ -60,10 +59,12 @@ class Utterance_encoder_mt(nn.Module):
 
         embedded = nn.utils.rnn.pack_padded_sequence(embedded, lengths, enforce_sorted=False)
         _, hidden = self.gru(embedded, hidden)
-        hidden = hidden.permute(1, 0, 2)
-        hidden = hidden.reshape(hidden.size(0), -1)
-        hidden = self.bn(self.hidden_proj(hidden))
+        hidden = hidden.sum(axis=0)
         hidden = torch.tanh(hidden)
+        # hidden = hidden.permute(1, 0, 2)
+        # hidden = hidden.reshape(hidden.size(0), -1)
+        # hidden = self.bn(self.hidden_proj(hidden))
+        # hidden = torch.tanh(hidden)
 
         return hidden    # [batch, hidden]
 
@@ -193,39 +194,45 @@ class OGCNContext(nn.Module):
 class Decoder_mt(nn.Module):
     
     def __init__(self, output_size, embed_size, hidden_size, user_embed_size=10,
-                 pretrained=None):
+                 n_layer=2, dropout=0.5, pretrained=None):
         super(Decoder_mt, self).__init__()
         self.output_size = output_size
         self.hidden_size = hidden_size
         self.embed_size = embed_size
+        self.n_layer = n_layer
         self.embed = nn.Embedding(self.output_size, self.embed_size)
-        self.gru = nn.GRU(self.embed_size + self.hidden_size, self.hidden_size)
-        self.out = nn.Linear(2 * hidden_size, output_size)
+        self.gru = nn.GRU(self.embed_size + self.hidden_size, 
+                          self.hidden_size, num_layers=n_layer, 
+                          dropout=(0 if n_layer == 1 else dropout))
+        self.out = nn.Linear(hidden_size, output_size)
 
         self.attn = Attention(hidden_size)
         self.init_weight()
 
     def init_weight(self):
-        init.orthogonal_(self.gru.weight_hh_l0)
-        init.orthogonal_(self.gru.weight_ih_l0)
+        init.xavier_normal_(self.gru.weight_hh_l0)
+        init.xavier_normal_(self.gru.weight_ih_l0)
+        self.gru.bias_ih_l0.data.fill_(0.0)
+        self.gru.bias_hh_l0.data.fill_(0.0)
         
     def forward(self, inpt, last_hidden, gcncontext):
-        # inpt: [batch_size], last_hidden: [1, batch, hidden_size]
+        # inpt: [batch_size], last_hidden: [2, batch, hidden_size]
+        # last_hidden from the encoder (2-layer-BiGRU)
         # gcncontext: [turn_len, batch, hidden_size], user_de: [batch, 11]
         embedded = self.embed(inpt).unsqueeze(0)    # [1, batch_size, embed_size]
-        last_hidden = last_hidden.squeeze(0)    # [batch, hidden]
+        key = last_hidden.sum(axis=0)    # [batch, hidden]
 
         # attention on the gcncontext
-        attn_weights = self.attn(last_hidden, gcncontext)
+        attn_weights = self.attn(key, gcncontext)
         context = attn_weights.bmm(gcncontext.transpose(0, 1))
         context = context.transpose(0, 1)    # [1, batch, hidden]
 
         rnn_inpt = torch.cat([embedded, context], 2)    # [1, batch, embed_size + hidden]
 
-        output, hidden = self.gru(rnn_inpt, last_hidden.unsqueeze(0).contiguous())
+        output, hidden = self.gru(rnn_inpt, last_hidden)
         output = output.squeeze(0)      # [batch, hidden_size]
-        context = context.squeeze(0)    # [batch, hidden]
-        output = torch.cat([output, context], 1)    # [batch, hidden * 2]
+        # context = context.squeeze(0)    # [batch, hidden]
+        # output = torch.cat([output, context], 1)    # [batch, hidden * 2]
         output = self.out(output)   # [batch, output_size]
         output = F.log_softmax(output, dim=1)
 
@@ -262,7 +269,9 @@ class MTGCN(nn.Module):
                                           dropout=dropout,
                                           threshold=context_threshold)
         self.decoder = Decoder_mt(output_size, embed_size, 
-                                    decoder_hidden_size) 
+                                  decoder_hidden_size,
+                                  n_layer=utter_n_layer,
+                                  dropout=dropout) 
         
         # hidden project
         self.hidden_proj = nn.Linear(context_hidden_size + user_embed_size, 
@@ -288,6 +297,7 @@ class MTGCN(nn.Module):
         
         subatch = self.user_embed(subatch)    # [turn, batch, 10]
         tubatch = self.user_embed(tubatch)    # [batch, 10]
+        tubatch = tubatch.unsqueeze(0).repeat(2, 1, 1)    # [2, batch, 10]
         
         # utterance encoding
         turns = []
@@ -301,12 +311,13 @@ class MTGCN(nn.Module):
         context_output = self.gcncontext(gbatch, turns, subatch)
         # context_output = context_output.permute(1, 0, 2)    # [turn, batch, hidden]
         
-        hidden = context_output[-1]    # [batch, decoder_hidden]
-        hidden = torch.cat([hidden, tubatch], 1)    # [batch, hidden+user_embed]
-        hidden = self.hidden_drop(torch.tanh(self.hidden_proj(hidden)))  # [batch, hidden]
+        ghidden = context_output[-1]    # [batch, decoder_hidden]
+        hidden = torch.stack([hidden, ghidden])    # [2, batch, hidden]
+        hidden = torch.cat([hidden, tubatch], 2)    # [2, batch, hidden+user_embed]
+        hidden = self.hidden_drop(torch.tanh(self.hidden_proj(hidden)))  # [2, batch, hidden]
 
         # decoding step
-        hidden = hidden.unsqueeze(0)     # [1, batch, hidden_size]
+        # hidden = hidden.unsqueeze(0)     # [1, batch, hidden_size]
         output = tgt[0, :]
         
         use_teacher = random.random() < self.teach_force
@@ -329,48 +340,51 @@ class MTGCN(nn.Module):
         # src: [turn, maxlen, batch_size], lengths: [turn, batch_size]
         # subatch: [turn_len, batch], tubatch: [batch]
         # output: [maxlen, batch_size]
-        turn_size, batch_size = len(src), src[0].size(1)
-        outputs = torch.zeros(maxlen, batch_size)
-        floss = torch.zeros(maxlen, batch_size, self.output_size)
-        if torch.cuda.is_available():
-            outputs = outputs.cuda()
-            floss = floss.cuda()
-            
-        subatch = self.user_embed(subatch)    # [turn, batch, 10]
-        tubatch = self.user_embed(tubatch)    # [batch, 10]
+        with torch.no_grad():
+            turn_size, batch_size = len(src), src[0].size(1)
+            outputs = torch.zeros(maxlen, batch_size)
+            floss = torch.zeros(maxlen, batch_size, self.output_size)
+            if torch.cuda.is_available():
+                outputs = outputs.cuda()
+                floss = floss.cuda()
 
-        # utterance encoding
-        turns = []
-        for i in range(turn_size):
-            hidden = self.utter_encoder(src[i], lengths[i])
-            turns.append(hidden)
-        turns = torch.stack(turns)     # [turn, batch, hidden]
+            subatch = self.user_embed(subatch)    # [turn, batch, 10]
+            tubatch = self.user_embed(tubatch)    # [batch, 10]
+            tubatch = tubatch.unsqueeze(0).repeat(2, 1, 1)    # [2, batch, 10]
 
-        # GCN Context encoding
-        # [batch, turn, hidden]
-        context_output = self.gcncontext(gbatch, turns, subatch)
-        # context_output = context_output.permute(1, 0, 2)    # [turn, batch, hidden]
-        
-        hidden = context_output[-1]    # [batch, decoder_hidden]
-        hidden = torch.cat([hidden, tubatch], 1)    # [batch, hidden+user_embed]
-        hidden = self.hidden_drop(torch.tanh(self.hidden_proj(hidden)))  # [batch, hidden]
+            # utterance encoding
+            turns = []
+            for i in range(turn_size):
+                hidden = self.utter_encoder(src[i], lengths[i])
+                turns.append(hidden)
+            turns = torch.stack(turns)     # [turn, batch, hidden]
 
-        hidden = hidden.unsqueeze(0)     # [1, batch, hidden]
-        output = torch.zeros(batch_size, dtype=torch.long).fill_(self.sos)
-        if torch.cuda.is_available():
-            output = output.cuda()
-        
-        for i in range(1, maxlen):
-            output, hidden = self.decoder(output, hidden, context_output)
-            floss[i] = output
-            output = output.max(1)[1]
-            outputs[i] = output
+            # GCN Context encoding
+            # [batch, turn, hidden]
+            context_output = self.gcncontext(gbatch, turns, subatch)
+            # context_output = context_output.permute(1, 0, 2)    # [turn, batch, hidden]
 
-        # de: [batch], outputs: [maxlen, batch]
-        if loss:
-            return outputs, floss
-        else:
-            return outputs
+            ghidden = context_output[-1]    # [batch, decoder_hidden]
+            hidden = torch.stack([hidden, ghidden])    # [2, batch, hidden]
+            hidden = torch.cat([hidden, tubatch], 2)    # [batch, hidden+user_embed]
+            hidden = self.hidden_drop(torch.tanh(self.hidden_proj(hidden)))  # [batch, hidden]
+
+            # hidden = hidden.unsqueeze(0)     # [1, batch, hidden]
+            output = torch.zeros(batch_size, dtype=torch.long).fill_(self.sos)
+            if torch.cuda.is_available():
+                output = output.cuda()
+
+            for i in range(1, maxlen):
+                output, hidden = self.decoder(output, hidden, context_output)
+                floss[i] = output
+                output = output.max(1)[1]
+                outputs[i] = output
+
+            # de: [batch], outputs: [maxlen, batch]
+            if loss:
+                return outputs, floss
+            else:
+                return outputs
 
 
 if __name__ == "__main__":
