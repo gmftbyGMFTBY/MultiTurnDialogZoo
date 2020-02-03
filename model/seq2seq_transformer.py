@@ -3,7 +3,9 @@
 # Time: 2019.9.22
 
 '''
-Pure transformer for seq2seq modeling
+Pure transformer for seq2seq modeling by huggingface/transformers
+
+
 '''
 
 import torch

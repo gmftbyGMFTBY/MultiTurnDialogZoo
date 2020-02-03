@@ -53,10 +53,7 @@ def train(train_iter, net, optimizer, vocab_size, pad,
             # batchnorm will throw error when batch_size is 1
             continue
 
-        if isinstance(optimizer, NoamOpt):
-            optimizer.optimizer.zero_grad()
-        else:
-            optimizer.zero_grad()
+        optimizer.zero_grad()
 
         # [seq_len, batch, vocab_size]
         if graph:
@@ -76,7 +73,6 @@ def train(train_iter, net, optimizer, vocab_size, pad,
 
         loss.backward()
         clip_grad_norm_(net.parameters(), grad_clip)
-
         optimizer.step()
         total_loss += loss.item()
         batch_num += 1
@@ -141,8 +137,10 @@ def test(data_iter, net, vocab_size, pad, debug=False, graph=False):
 
 
 def translate(data_iter, net, **kwargs):
+    '''
+    PPL calculating refer to: https://github.com/hsgodhia/hred
+    '''
     net.eval()
-    # load the vocab
     tgt_vocab = load_pickle(kwargs['tgt_vocab'])
     src_vocab = load_pickle(kwargs['src_vocab'])
     src_w2idx, src_idx2w = src_vocab
@@ -170,15 +168,23 @@ def translate(data_iter, net, **kwargs):
             
             # output: [maxlen, batch_size], sbatch: [turn, max_len, batch_size]
             if kwargs['graph'] == 1:
-                output, f_l = net.predict(sbatch, gbatch, 
+                output, _ = net.predict(sbatch, gbatch, 
                                           subatch, tubatch, 
                                           len(tbatch), turn_lengths,
                                           loss=True)
             else:
-                output, f_l = net.predict(sbatch, len(tbatch), turn_lengths,
+                output, _ = net.predict(sbatch, len(tbatch), turn_lengths,
                                           loss=True)
-                        
-            # ipdb.set_trace()
+                
+            # true working ppl by using teach_force
+            hold_teach = net.teach_force
+            net.teach_force = 1.0
+            if kwargs['graph'] == 1:
+                f_l = net(sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths)
+            else:
+                f_l = net(sbatch, tbatch, turn_lengths)
+            net.teach_force = hold_teach
+            
             loss = criterion(f_l[1:].view(-1, len(tgt_w2idx)),
                              tbatch[1:].contiguous().view(-1))
             batch_num += 1
@@ -224,7 +230,7 @@ def translate(data_iter, net, **kwargs):
                 else:
                     src_endx = src.index(src_pad) if src_pad in src else len(src)
                     src_endx_ = src.index(src_eos) if src_eos in src else len(src)
-                    sec_endx = min(src_endx, src_endx_)
+                    src_endx = min(src_endx, src_endx_)
                     src = src[1:src_endx]
                     src = ' '.join(num2seq(src, src_idx2w))
 
@@ -275,12 +281,6 @@ def write_into_tb(pred_path, writer, writer_str, epoch, ppl, bleu_mode, model, d
         references.extend(line2)
     distinct_1, distinct_2 = cal_Distinct(candidates)
     rdistinct_1, rdistinct_2 = cal_Distinct(references)
-
-    # BERTScore < 512 for bert
-    # Fuck BERTScore, slow as the snail, fuck it
-    # ref = [' '.join(i) for i in ref]
-    # tgt = [' '.join(i) for i in tgt]
-    # bert_scores = cal_BERTScore(ref, tgt)
     
     # Embedding-based metric: Embedding Average (EA), Vector Extrema (VX), Greedy Matching (GM)
     # load the dict
@@ -323,10 +323,7 @@ def main(**kwargs):
     print(f'[!] load vocab over, src/tgt vocab size: {len(src_idx2w)}/{len(tgt_idx2w)}')
 
     # pretrained path
-    if kwargs['pretrained'] == 'bert':
-        pretrained = f'./processed/{kwargs["dataset"]}/{kwargs["model"]}/'
-    else:
-        pretrained = None
+    pretrained = None
 
     # create the net
     if kwargs['model'] == 'HRED':
@@ -413,9 +410,16 @@ def main(**kwargs):
     # else:
     print(f'[!] Optimizer Adam')
     optimizer = optim.Adam(net.parameters(), lr=kwargs['lr'])
-    scheduler = lr_scheduler.StepLR(optimizer, 
-                                    step_size=kwargs['lr_step'],
-                                    gamma=kwargs['lr_gamma'])
+    # scheduler = lr_scheduler.StepLR(optimizer, 
+    #                                 step_size=kwargs['lr_step'],
+    #                                 gamma=kwargs['lr_gamma'])
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 
+                                               mode='min',
+                                               factor=kwargs['lr_gamma'],
+                                               patience=kwargs['patience'],
+                                               verbose=True,
+                                               cooldown=0,
+                                               min_lr=1e-6)
     pbar = tqdm(range(1, kwargs['epochs'] + 1))
     training_loss, validation_loss = [], []
     min_loss = np.inf
@@ -517,8 +521,8 @@ def main(**kwargs):
                 holder -= 1
             net.teach_force = teacher_force_ratio
         
-        # lr schedule change
-        scheduler.step()
+        # lr schedule change, monitor the evaluation loss
+        scheduler.step(val_loss)
         
 
     pbar.close()
@@ -575,8 +579,6 @@ if __name__ == "__main__":
                         help='transformer decoder need a little different training process')
     parser.add_argument('--d_model', type=int, default=512, 
                         help='d_model for transformer')
-    parser.add_argument('--pretrained', type=str, default='', 
-                        help='whether use the pretrained embedding')
     parser.add_argument('--contextrnn', dest='contextrnn', action='store_true')
     parser.add_argument('--no-contextrnn', dest='contextrnn', action='store_false')
     parser.add_argument('--position_embed_size', type=int, default=30)
@@ -596,7 +598,7 @@ if __name__ == "__main__":
     parser.add_argument('--dynamic_tfr_weight', type=float, default=0.05)
     parser.add_argument('--dynamic_tfr_counter', type=int, default=5)
     parser.add_argument('--dynamic_tfr_threshold', type=float, default=0.3)
-    parser.add_argument('--bleu', type=str, default='nltk', help='nlkt or perl')
+    parser.add_argument('--bleu', type=str, default='nltk', help='nltk or perl')
     parser.add_argument('--lr_step', type=int, default=5, help='lr schedule step')
     parser.add_argument('--lr_gamma', type=float, default=0.8, help='lr schedule gamma factor')
 

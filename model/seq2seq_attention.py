@@ -30,13 +30,8 @@ class Encoder(nn.Module):
         self.embed_size = embed_size
         self.n_layer = n_layers
         
-        if pretrained:
-            pretrained = f'{pretrained}/ipt_bert_embedding.pkl'
-            self.embed = PretrainedEmbedding(self.input_size, self.embed_size, pretrained)
-        else:
-            self.embed = nn.Embedding(self.input_size, self.embed_size)
-
-        self.input_dropout = nn.Dropout(p=dropout)
+        self.embed = nn.Embedding(self.input_size, self.embed_size)
+        # self.input_dropout = nn.Dropout(p=dropout)
         
         self.rnn = nn.GRU(embed_size, 
                           hidden_size, 
@@ -44,22 +39,22 @@ class Encoder(nn.Module):
                           dropout=(0 if n_layers == 1 else dropout),
                           bidirectional=True)
 
-        self.hidden_proj = nn.Linear(2 * n_layers * hidden_size, hidden_size)
-        self.bn = nn.BatchNorm1d(num_features=hidden_size)
+        # self.hidden_proj = nn.Linear(2 * n_layers * hidden_size, hidden_size)
+        # self.bn = nn.BatchNorm1d(num_features=hidden_size)
             
         self.init_weight()
             
     def init_weight(self):
         # orthogonal init
-        init.orthogonal_(self.rnn.weight_hh_l0)
-        init.orthogonal_(self.rnn.weight_ih_l0)
+        init.xavier_normal_(self.rnn.weight_hh_l0)
+        init.xavier_normal_(self.rnn.weight_ih_l0)
         self.rnn.bias_ih_l0.data.fill_(0.0)
         self.rnn.bias_hh_l0.data.fill_(0.0)
         
     def forward(self, src, inpt_lengths, hidden=None):
         # src: [seq, batch]
         embedded = self.embed(src)    # [seq, batch, embed]
-        embedded = self.input_dropout(embedded)
+        # embedded = self.input_dropout(embedded)
 
         if not hidden:
             hidden = torch.randn(2 * self.n_layer, src.shape[-1], self.hidden_size)
@@ -73,13 +68,15 @@ class Encoder(nn.Module):
         output, hidden = self.rnn(embedded, hidden)
         output, _ = nn.utils.rnn.pad_packed_sequence(output)
 
-        # fix output
+        # fix output shape
         output = output[:, :, :self.hidden_size] + output[:, :, self.hidden_size:]
-
+        # hidden = hidden.sum(axis=0)    # [batch, hidden]
+        
         # fix hidden
-        hidden = hidden.permute(1, 0, 2)
-        hidden = hidden.reshape(hidden.shape[0], -1)
-        hidden = self.bn(self.hidden_proj(hidden))    # [batch, *]
+        # hidden = hidden.permute(1, 0, 2)
+        # hidden = hidden.reshape(hidden.shape[0], -1)
+        # hidden = self.bn(hidden)    # [batch, *]
+        # hidden = self.hidden_proj(hidden)
         hidden = torch.tanh(hidden)
         
         # [seq_len, batch, hidden_size], [batch, hidden]
@@ -88,41 +85,43 @@ class Encoder(nn.Module):
     
 class Decoder(nn.Module):
     
-    def __init__(self, embed_size, hidden_size, output_size, pretrained=None):
+    def __init__(self, embed_size, hidden_size, output_size, n_layers=2, dropout=0.5, pretrained=None):
         super(Decoder, self).__init__()
         self.embed_size, self.hidden_size = embed_size, hidden_size
         self.output_size = output_size
         
-        if pretrained:
-            pretrained = f'{pretrained}/opt_bert_embedding.pkl'
-            self.embed = PretrainedEmbedding(output_size, embed_size, pretrained)
-        else:
-            self.embed = nn.Embedding(output_size, embed_size)
+        self.embed = nn.Embedding(output_size, embed_size)
         self.attention = Attention(hidden_size) 
-        self.rnn = nn.GRU(hidden_size + embed_size, hidden_size)
+        self.rnn = nn.GRU(hidden_size + embed_size, 
+                          hidden_size,
+                          num_layers=n_layers, 
+                          dropout=(0 if n_layers == 1 else dropout))
         self.out = nn.Linear(hidden_size, output_size)
         
         self.init_weight()
         
     def init_weight(self):
-        # orthogonal init
-        init.orthogonal_(self.rnn.weight_hh_l0)
-        init.orthogonal_(self.rnn.weight_ih_l0)
+        # orthogonal inittor
+        init.xavier_normal_(self.rnn.weight_hh_l0)
+        init.xavier_normal_(self.rnn.weight_ih_l0)
+        self.rnn.bias_ih_l0.data.fill_(0.0)
+        self.rnn.bias_hh_l0.data.fill_(0.0)
         
     def forward(self, inpt, last_hidden, encoder_outputs):
         # inpt: [batch]
-        # last_hidden: [batch, hidden_size]
+        # last_hidden: [2, batch, hidden_size]
         embedded = self.embed(inpt).unsqueeze(0)    # [1, batch, embed_size]
         
         # attn_weights: [batch, 1, timestep of encoder_outputs]
-        attn_weights = self.attention(last_hidden, encoder_outputs)
+        key = last_hidden.sum(axis=0)
+        attn_weights = self.attention(key, encoder_outputs)
             
         # context: [batch, 1, hidden_size]
         context = attn_weights.bmm(encoder_outputs.transpose(0, 1))
         context = context.transpose(0, 1)
         
         rnn_input = torch.cat([embedded, context], 2)
-        output, hidden = self.rnn(rnn_input, last_hidden.unsqueeze(0))
+        output, hidden = self.rnn(rnn_input, last_hidden)
         output = output.squeeze(0)
         # context = context.squeeze(0)
         # [batch, hidden * 2]
@@ -131,8 +130,8 @@ class Decoder(nn.Module):
         output = F.log_softmax(output, dim=1)
         
         # output: [batch, output_size]
-        # hidden: [batch, hidden_size]
-        hidden = hidden.squeeze(0)
+        # hidden: [2, batch, hidden_size]
+        # hidden = hidden.squeeze(0)
         return output, hidden
     
     
@@ -149,11 +148,15 @@ class Seq2Seq(nn.Module):
                  pretrained=None):
         super(Seq2Seq, self).__init__()
         self.encoder = Encoder(input_size, embed_size, utter_hidden,
-                               n_layers=utter_n_layer, dropout=dropout,
+                               n_layers=utter_n_layer, 
+                               dropout=dropout,
                                pretrained=pretrained)
-        self.decoder = Decoder(embed_size, decoder_hidden, output_size, 
+        self.decoder = Decoder(embed_size, decoder_hidden, 
+                               output_size, n_layers=utter_n_layer,
+                               dropout=dropout,
                                pretrained=pretrained)
         self.teach_force = teach_force
+        self.utter_n_layer = utter_n_layer
         self.pad, self.sos = pad, sos
         self.output_size = output_size
         
@@ -169,6 +172,7 @@ class Seq2Seq(nn.Module):
         # encoder_output: [seq_len, batch, hidden_size]
         # hidden: [1, batch, hidden_size]
         encoder_output, hidden = self.encoder(src, lengths)
+        hidden = hidden[-self.utter_n_layer:]
         output = tgt[0, :]
         
         use_teacher = random.random() < self.teach_force
@@ -181,36 +185,37 @@ class Seq2Seq(nn.Module):
             for t in range(1, max_len):
                 output, hidden = self.decoder(output, hidden, encoder_output)
                 outputs[t] = output
-                # output = torch.max(output, 1)[1]
                 output = output.topk(1)[1].squeeze().detach()
         
         # [max_len, batch, output_size]
         return outputs
     
     def predict(self, src, maxlen, lengths, loss=True):
-        batch_size = src.shape[1]
-        outputs = torch.zeros(maxlen, batch_size)
-        floss = torch.zeros(maxlen, batch_size, self.output_size)
-        if torch.cuda.is_available():
-            outputs = outputs.cuda()
-            floss = floss.cuda()
-            
-        encoder_output, hidden = self.encoder(src, lengths)
-        output = torch.zeros(batch_size, dtype=torch.long).fill_(self.sos)
-        if torch.cuda.is_available():
-            output = output.cuda()
-        
-        for t in range(1, maxlen):
-            output, hidden = self.decoder(output, hidden, encoder_output)
-            floss[t] = output
-            # output = torch.max(output, 1)[1]    # [1]
-            output = output.topk(1)[1].squeeze().detach()
-            outputs[t] = output    # output: [1, output_size]
-        
-        if loss:
-            return outputs, floss
-        else:
-            return outputs 
+        with torch.no_grad():
+            batch_size = src.shape[1]
+            outputs = torch.zeros(maxlen, batch_size)
+            floss = torch.zeros(maxlen, batch_size, self.output_size)
+            if torch.cuda.is_available():
+                outputs = outputs.cuda()
+                floss = floss.cuda()
+
+            encoder_output, hidden = self.encoder(src, lengths)
+            hidden = hidden[-self.utter_n_layer:]
+            output = torch.zeros(batch_size, dtype=torch.long).fill_(self.sos)
+            if torch.cuda.is_available():
+                output = output.cuda()
+
+            for t in range(1, maxlen):
+                output, hidden = self.decoder(output, hidden, encoder_output)
+                floss[t] = output
+                # output = torch.max(output, 1)[1]    # [1]
+                output = output.topk(1)[1].squeeze()
+                outputs[t] = output    # output: [1, output_size]
+
+            if loss:
+                return outputs, floss
+            else:
+                return outputs 
 
 
 if __name__ == "__main__":

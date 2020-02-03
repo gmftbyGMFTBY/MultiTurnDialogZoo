@@ -45,29 +45,32 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
     return src_dataset, tgt_dataset
 '''
 
-
 def load_data_flatten(src, tgt, src_vocab, tgt_vocab, maxlen):
     # sort by the lengths
     src_w2idx, src_idx2w = load_pickle(src_vocab)
     tgt_w2idx, tgt_idx2w = load_pickle(tgt_vocab)
 
     # sub function
-    def load_(filename, w2idx):
+    def load_(filename, w2idx, src=True):
         with open(filename) as f:
             dataset = []
             for line in tqdm(f.readlines()):
                 line = clean(line)
-                if '<user0>' in line: user_c = '<user0>'
-                elif '<user1>' in line: user_c = '<user1>'
-                line = line.replace(user_c, '').strip()
+                # if '<user0>' in line: user_c = '<user0>'
+                # elif '<user1>' in line: user_c = '<user1>'
+                line = line.replace('<user0>', 'user0')
+                line = line.replace('<user1>', 'user1')
                 line = [w2idx['<sos>']] + [w2idx.get(w, w2idx['<unk>']) for w in nltk.word_tokenize(line)] + [w2idx['<eos>']]
                 if len(line) > maxlen:
-                    line = [w2idx['<sos>']] + line[-maxlen:]
+                    if src:
+                        line = [w2idx['<sos>']] + line[-maxlen:]
+                    else:
+                        line = line[:maxlen] + [w2idx['<eos>']]
                 dataset.append(line)
         return dataset
 
-    src_dataset = load_(src, src_w2idx)    # [datasize, lengths]
-    tgt_dataset = load_(tgt, tgt_w2idx)    # [datasize, lengths]
+    src_dataset = load_(src, src_w2idx, src=True)    # [datasize, lengths]
+    tgt_dataset = load_(tgt, tgt_w2idx, src=False)    # [datasize, lengths]
     print(f'[!] load dataset over')
 
     return src_dataset, tgt_dataset
@@ -298,6 +301,7 @@ if __name__ == "__main__":
     batch_num = 0
     src_w2idx, src_idx2w = load_pickle('./processed/dailydialog/iptvocab.pkl')
     tgt_w2idx, tgt_idx2w = load_pickle('./processed/dailydialog/optvocab.pkl')
+    torch.cuda.set_device(2)
     for sbatch, tbatch, turn_lengths in get_batch_data_flatten('./data/dailydialog/src-train.txt', 
             './data/dailydialog/tgt-train.txt',
                                          './processed/dailydialog/iptvocab.pkl',

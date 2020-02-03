@@ -24,8 +24,10 @@ class Attention(nn.Module):
     
     def __init__(self, hidden_size):
         super(Attention, self).__init__()
-        self.attn = nn.Linear(hidden_size * 2, hidden_size * 2)
-        self.v = nn.Parameter(torch.rand(hidden_size * 2))
+        # self.attn = nn.Linear(hidden_size * 2, hidden_size * 2)
+        self.attn = nn.Linear(hidden_size * 2, hidden_size)
+        # self.v = nn.Parameter(torch.rand(hidden_size * 2))
+        self.v = nn.Parameter(torch.rand(hidden_size))
         stdv = 1. / math.sqrt(self.v.size(0))
         self.v.data.uniform_(-stdv, stdv)
         

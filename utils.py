@@ -326,7 +326,7 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
             for utterance in utterances:
                 if '<user0>' in utterance: user_c, user_cr = '<user0>', 'user0'
                 elif '<user1>' in utterance: user_c, user_cr = '<user1>', 'user1'
-                utterance = utterance.replace(user_c, '').strip()
+                utterance = utterance.replace(user_c, user_cr).strip()
                 line = [src_w2idx['<sos>']] + [src_w2idx.get(w, src_w2idx['<unk>']) for w in nltk.word_tokenize(utterance)] + [src_w2idx['<eos>']]
                 if len(line) > maxlen:
                     line = [src_w2idx['<sos>']] + line[-maxlen:]
@@ -342,10 +342,10 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
             line = clean(line)
             if '<user0>' in line: user_c, user_cr = '<user0>', 'user0'
             elif '<user1>' in line: user_c, user_cr = '<user1>', 'user1'
-            line = line.replace(user_c, '').strip()
+            line = line.replace(user_c, user_cr).strip()
             line = [tgt_w2idx['<sos>']] + [tgt_w2idx.get(w, tgt_w2idx['<unk>']) for w in nltk.word_tokenize(line)] + [tgt_w2idx['<eos>']]
             if len(line) > maxlen:
-                line = [tgt_w2idx['<sos>']] + line[-maxlen:]
+                line = line[:maxlen] + [tgt_w2idx['<eos>']]
             tgt_dataset.append(line)
             tgt_user.append(user_vocab.index(user_cr))
  
@@ -619,6 +619,32 @@ def analyse_coverage_word_embedding(vocab, lang='en'):
             
     print(f'[!] the coverage of the word embedding is {count}/{len(idx2w)}/{round(count / len(idx2w), 2)}')
     
+    
+def analyse_dataset(dataset):
+    # analyse the dataset setting, adjust the padding lengths
+    with open(f'./data/{dataset}/src-train.txt') as f:
+        turn, tcounter = 0, 0
+        i, j, icounter, jcounter = 0, 0, 0, 0
+        imax, imin, jmax, jmin = -10000, 10000, -10000, 10000
+        for line in f.readlines():
+            line = line.strip()
+            j += len(line.split())
+            jcounter += 1
+            jmin = min(jmin, len(line.split()))
+            jmax = max(jmax, len(line.split()))
+            lines = line.strip().split('__eou__')
+            turn += len(lines)
+            tcounter += 1
+            for k in lines:
+                i += len(k.split())
+                icounter += 1
+                imin = min(imin, len(k.split()))
+                imax = max(imax, len(k.split()))
+    print(f'[!] length of the sentenes(avg, max, min) for hierarchical: {round(i/icounter, 4)}/{imax}/{imin}')
+    print(f'[!] length of the sentenes(avg, max, min) for no-hierarchical: {round(j/jcounter, 4)}/{jmax}/{jmin}')
+    print(f'[!] turn length: {round(turn/tcounter, 4)}')
+                
+    
 
 
 if __name__ == "__main__":
@@ -670,7 +696,9 @@ if __name__ == "__main__":
         # ipdb.set_trace()
         generate_graph(ppdataset, args.graph, threshold=args.threshold, bidir=args.bidir, lang=args.lang)
     elif mode == 'stat':
-        analyse_graph(args.graph, hops=args.hops)
+        # too slow, ban it
+        # analyse_graph(args.graph, hops=args.hops)
+        analyse_dataset(args.dataset)
     elif mode == 'perturbation':
         if args.perturbation_in and args.perturbation_out:
             Perturbations_test(args.perturbation_in, args.perturbation_out, mode=args.perturbation_mode)

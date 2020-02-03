@@ -68,15 +68,15 @@ Generate the graph of the dataset
 ```bash
 # only MTGCN and GatedGCN need to create the graph
 # zh or en
-./run.sh graph dailydialog zh none 0 
+./run.sh graph dailydialog zh 0 
 ```
 
 Train the model (HRED / WSeq / Seq2Seq / Transformer / MReCoSa) on the dataset (dailydialog / Ubuntu):
 
 ```bash
-# train mode, dataset dailydialog, model HRED, pretrained [bert/none] on 4th GPU
+# train mode, dataset dailydialog, model HRED on 4th GPU
 # max epochs is 100. You can simply stop the training when the performance shown in tensorboard is flatten (ctrl-c). 
-./run.sh train dailydialog HRED bert 4
+./run.sh train dailydialog HRED 4
 tensorboard --logdir tblogs
 ```
 
@@ -90,22 +90,22 @@ Train the N-gram Language Model by NLTK (Lidstone with 0.5 gamma, default n-gram
 Translate the test dataset and caulculate the test perplexity by using n-gram model:
 
 ```bash
-# translate mode, dataset dialydialog, model HRED, pretrained [bert/none] on 4th GPU
-./run.sh translate dailydialog HRED bert 4
+# translate mode, dataset dialydialog, model HRED on 4th GPU
+./run.sh translate dailydialog HRED 4
 ```
 
 Evaluate the result of the translated utterances
 
 ```bash
 # get the BLEU and Distinct result of the generated sentences on 4th GPU (BERTScore need it)
-./run.sh eval dailydialog HRED none 4
+./run.sh eval dailydialog HRED 4
 ```
 
 Get the curve of all the training checkpoints
 
 ```bash
 # draw the performance curve, but actually, you can get all the information from the tensorboard
-./run.sh curve dailydialog MTGCN none 4
+./run.sh curve dailydialog MTGCN 4
 ```
 
 Perturbate the source test dataset

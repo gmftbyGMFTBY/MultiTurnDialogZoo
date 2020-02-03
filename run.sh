@@ -5,13 +5,11 @@
 mode=$1     # graph/stat/train/translate/eval/curve
 dataset=$2
 model=$3
-pretrained=$4
-CUDA=$5
+CUDA=$4
 
 # try catch
 if [ ! $model ]; then
     model='none'
-    pretrained='none'
     CUDA=0
 fi
 
@@ -70,12 +68,13 @@ else
 fi
 
 # maxlen and batch_size
+# for dailydialog dataset, 50 and 200 is the most appropriate settings
 if [ $hierarchical == 1 ]; then
     maxlen=50
-    batch_size=128
+    batch_size=256
 else
-    maxlen=200
-    batch_size=16
+    maxlen=150
+    batch_size=64
 fi
 
 # ========== Ready Perfectly ========== #
@@ -200,30 +199,11 @@ elif [ $mode = 'train' ]; then
     rm tblogs/$dataset/$model/*
     
     echo "[!] back up finished"
-
-    # pretrained embedding
-    if [ $pretrained = 'bert' ]; then
-        echo "[!] Begin to generate the bert embedding"
-        python utils.py \
-            --mode pretrained \
-            --vocab ./processed/$dataset/$model/iptvocab.pkl \
-            --pretrained ./processed/$dataset/$model/ipt_bert_embedding.pkl
-        echo "[!] End to generate the src bert embedding"
-
-        python utils.py \
-            --mode pretrained \
-            --vocab ./processed/$dataset/$model/optvocab.pkl \
-            --pretrained ./processed/$dataset/$model/opt_bert_embedding.pkl
-        echo "[!] End to generate the tgt bert embedding"
-        embed_size=768
-    else
-        echo "[!] Donot use the pretrained embedding"
-        embed_size=500
-    fi
     
     # Train
     echo "[!] Begin to train the model"
-
+    
+    # set the lr_gamma as 1, means that don't use the learning rate schedule
     CUDA_VISIBLE_DEVICES="$CUDA" python train.py \
         --src_train ./data/$dataset/src-train.txt \
         --tgt_train ./data/$dataset/tgt-train.txt \
@@ -239,47 +219,39 @@ elif [ $mode = 'train' ]; then
         --pred ./processed/${dataset}/${model}/pred.txt \
         --min_threshold 0 \
         --max_threshold 100 \
-        --seed 20 \
+        --seed 30 \
         --epochs 100 \
         --lr 1e-4 \
         --batch_size $batch_size \
         --model $model \
         --utter_n_layer 2 \
-        --utter_hidden 500 \
+        --utter_hidden 512 \
         --teach_force 1 \
-        --context_hidden 500 \
-        --decoder_hidden 500 \
-        --embed_size $embed_size \
-        --patience 10 \
+        --context_hidden 512 \
+        --decoder_hidden 512 \
+        --embed_size 256 \
+        --patience 5 \
         --dataset $dataset \
-        --grad_clip 10.0 \
+        --grad_clip 3.0 \
         --dropout 0.3 \
-        --d_model $embed_size \
+        --d_model 500 \
         --hierarchical $hierarchical \
         --transformer_decode $transformer_decode \
-        --pretrained $pretrained \
         --graph $graph \
         --maxlen $maxlen \
         --position_embed_size 30 \
         --context_threshold 2 \
-        --dynamic_tfr 10 \
-        --dynamic_tfr_weight 0.1 \
+        --dynamic_tfr 15 \
+        --dynamic_tfr_weight 0.0 \
         --dynamic_tfr_counter 10 \
-        --dynamic_tfr_threshold 0.5 \
+        --dynamic_tfr_threshold 1.0 \
         --bleu nltk \
         --contextrnn \
         --no-debug \
-        --lr_step 20 \
+        --lr_step 50 \
         --lr_gamma 0.5 \
 
 elif [ $mode = 'translate' ]; then
-    
-    if [ $pretrained = 'bert' ]; then
-        embed_size=768
-    else
-        embed_size=500
-    fi
-    
     rm ./processed/$dataset/$model/ppl.txt
 
     CUDA_VISIBLE_DEVICES="$CUDA" python translate.py \
@@ -294,8 +266,8 @@ elif [ $mode = 'translate' ]; then
         --context_hidden 500 \
         --decoder_hidden 500 \
         --seed 20 \
-        --embed_size $embed_size \
-        --d_model $embed_size \
+        --embed_size 500 \
+        --d_model 500 \
         --dataset $dataset \
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
@@ -303,7 +275,6 @@ elif [ $mode = 'translate' ]; then
         --pred ./processed/${dataset}/${model}/pred.txt \
         --hierarchical $hierarchical \
         --tgt_maxlen 50 \
-        --pretrained $pretrained \
         --graph $graph \
         --test_graph ./processed/$dataset/test-graph.pkl \
         --position_embed_size 30 \
@@ -329,8 +300,8 @@ elif [ $mode = 'translate' ]; then
             --context_hidden 500 \
             --decoder_hidden 500 \
             --seed 20 \
-            --embed_size $embed_size \
-            --d_model $embed_size \
+            --embed_size 500 \
+            --d_model 300 \
             --dataset $dataset \
             --src_vocab ./processed/$dataset/iptvocab.pkl \
             --tgt_vocab ./processed/$dataset/optvocab.pkl \
@@ -338,7 +309,6 @@ elif [ $mode = 'translate' ]; then
             --pred ./processed/${dataset}/${model}/pred.txt \
             --hierarchical $hierarchical \
             --tgt_maxlen 50 \
-            --pretrained $pretrained \
             --graph $graph \
             --test_graph ./processed/$dataset/test-graph-perturbation-${i}.pkl \
             --position_embed_size 30 \
@@ -356,13 +326,6 @@ elif [ $mode = 'eval' ]; then
 elif [ $mode = 'curve' ]; then
     # do not add the BERTScore evaluate when begin to curve mode
     # evaluation will be too slow
-
-    if [ $pretrained = 'bert' ]; then
-        embed_size=768
-    else
-        embed_size=300
-    fi
-    
     rm ./processed/${dataset}/${model}/conclusion.txt
     
     # for i in {1..30}
@@ -381,8 +344,8 @@ elif [ $mode = 'curve' ]; then
             --context_hidden 500 \
             --decoder_hidden 500 \
             --seed 20 \
-            --embed_size $embed_size \
-            --d_model $embed_size \
+            --embed_size 300 \
+            --d_model 500 \
             --dataset $dataset \
             --src_vocab ./processed/$dataset/iptvocab.pkl \
             --tgt_vocab ./processed/$dataset/optvocab.pkl \
@@ -390,7 +353,6 @@ elif [ $mode = 'curve' ]; then
             --pred ./processed/${dataset}/${model}/pred.txt \
             --hierarchical $hierarchical \
             --tgt_maxlen 50 \
-            --pretrained $pretrained \
             --graph $graph \
             --test_graph ./processed/$dataset/test-graph.pkl \
             --position_embed_size 30 \
