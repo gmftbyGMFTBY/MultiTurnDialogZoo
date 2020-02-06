@@ -31,21 +31,20 @@ class Utterance_encoder(nn.Module):
         self.hidden_size = hidden_size
         self.input_size = input_size
         self.n_layer = n_layer
-        if pretrained:
-            pretrained = f'{pretrained}/ipt_bert_embedding.pkl'
-            self.embed = PretrainedEmbedding(input_size, embedding_size, pretrained)
-        else:
-            self.embed = nn.Embedding(input_size, self.embedding_size)
+        self.embed = nn.Embedding(input_size, self.embedding_size)
         self.gru = nn.GRU(self.embedding_size, self.hidden_size, num_layers=n_layer, 
                           dropout=dropout, bidirectional=True)
         # hidden_project
-        self.hidden_proj = nn.Linear(n_layer * 2 * self.hidden_size, hidden_size)
-        self.bn = nn.BatchNorm1d(num_features=hidden_size)
+        # self.hidden_proj = nn.Linear(n_layer * 2 * self.hidden_size, hidden_size)
+        # self.bn = nn.BatchNorm1d(num_features=hidden_size)
 
         self.init_weight()
 
     def init_weight(self):
-        init.xavier_normal_(self.hidden_proj.weight)
+        init.xavier_normal_(self.gru.weight_hh_l0)
+        init.xavier_normal_(self.gru.weight_ih_l0)
+        self.gru.bias_ih_l0.data.fill_(0.0)
+        self.gru.bias_hh_l0.data.fill_(0.0)
 
     def forward(self, inpt, lengths, hidden=None):
         # use pack_padded
@@ -60,13 +59,15 @@ class Utterance_encoder(nn.Module):
 
         embedded = nn.utils.rnn.pack_padded_sequence(embedded, lengths, enforce_sorted=False)
         _, hidden = self.gru(embedded, hidden)    
+        hidden = hidden.sum(axis=0)
+        hidden = torch.tanh(hidden)
         # [n_layer * bidirection, batch, hidden_size]
         # hidden = hidden.reshape(hidden.shape[1], -1)
         # ipdb.set_trace()
-        hidden = hidden.permute(1, 0, 2)    # [batch, n_layer * bidirectional, hidden_size]
-        hidden = hidden.reshape(hidden.size(0), -1) # [batch, *]
-        hidden = self.bn(self.hidden_proj(hidden))
-        hidden = torch.tanh(hidden)   # [batch, hidden]
+        # hidden = hidden.permute(1, 0, 2)    # [batch, n_layer * bidirectional, hidden_size]
+        # hidden = hidden.reshape(hidden.size(0), -1) # [batch, *]
+        # hidden = self.bn(self.hidden_proj(hidden))
+        # hidden = torch.tanh(hidden)   # [batch, hidden]
         return hidden
 
 
@@ -80,22 +81,30 @@ class Context_encoder(nn.Module):
         super(Context_encoder, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
-        self.gru = nn.GRU(self.input_size, self.hidden_size)
-        self.drop = nn.Dropout(p=dropout)
+        self.gru = nn.GRU(self.input_size, self.hidden_size, bidirectional=True)
+        # self.drop = nn.Dropout(p=dropout)
+        self.init_weight()
+
+    def init_weight(self):
+        init.xavier_normal_(self.gru.weight_hh_l0)
+        init.xavier_normal_(self.gru.weight_ih_l0)
+        self.gru.bias_ih_l0.data.fill_(0.0)
+        self.gru.bias_hh_l0.data.fill_(0.0)
 
     def forward(self, inpt, hidden=None):
         # inpt: [turn_len, batch, input_size]
         # hidden
         if not hidden:
-            hidden = torch.randn(1, inpt.shape[1], self.hidden_size)
+            hidden = torch.randn(2, inpt.shape[1], self.hidden_size)
             if torch.cuda.is_available():
                 hidden = hidden.cuda()
         
-        inpt = self.drop(inpt)
+        # inpt = self.drop(inpt)
         output, hidden = self.gru(inpt, hidden)
+        output = output[:, :, :self.hidden_size] + output[:, :, self.hidden_size:]
 
-        # hidden: [1, batch, hidden_size]
-        hidden = hidden.squeeze(0)    # [batch, hidden_size]
+        # hidden: [2, batch, hidden_size]
+        hidden = torch.tanh(hidden)    # [batch, hidden_size]
         return output, hidden
         
 
@@ -113,27 +122,31 @@ class Decoder(nn.Module):
     smaller model size than HRED-attn but has the attention part
     '''
 
-    def __init__(self, output_size, embed_size, hidden_size, pretrained=None):
+    def __init__(self, output_size, embed_size, hidden_size, n_layer=2, dropout=0.5, pretrained=None):
         super(Decoder, self).__init__()
         self.output_size = output_size
         self.hidden_size = hidden_size
         self.embed_size = embed_size
-        if pretrained:
-            pretrained = f'{pretrained}/opt_bert_embedding.pkl'
-            self.embed = PretrainedEmbedding(output_size, embed_size, pretrained)
-        else:
-            self.embed = nn.Embedding(self.output_size, self.embed_size)
-        self.gru = nn.GRU(self.embed_size + self.hidden_size, self.hidden_size)
+        self.embed = nn.Embedding(self.output_size, self.embed_size)
+        self.gru = nn.GRU(self.embed_size + self.hidden_size, self.hidden_size,
+                          num_layers=n_layer,
+                          dropout=(0 if n_layer == 1 else dropout))
         self.out = nn.Linear(hidden_size, output_size)
 
         # attention on context encoder
         self.attn = WSeq_attention(hidden_size)
+        self.init_weight()
+
+    def init_weight(self):
+        init.xavier_normal_(self.gru.weight_hh_l0)
+        init.xavier_normal_(self.gru.weight_ih_l0)
+        self.gru.bias_ih_l0.data.fill_(0.0)
+        self.gru.bias_hh_l0.data.fill_(0.0)
 
     def forward(self, inpt, last_hidden, encoder_outputs):
         # inpt: [batch_size], last_hidden: [1, batch, hidden_size]
         # encoder_outputs: [turn_len, batch, hidden_size]
         embedded = self.embed(inpt).unsqueeze(0)    # [1, batch_size, embed_size]
-        last_hidden = last_hidden.squeeze(0)    # [batch, hidden]
 
         # [batch, hidden_size]
         if len(encoder_outputs) == 1:
@@ -144,7 +157,7 @@ class Decoder(nn.Module):
         rnn_input = torch.cat([embedded, context], 2)   # [1, batch, 2 * hidden]
 
         # output: [1, batch, hidden_size], hidden: [1, batch, hidden_size]
-        output, hidden = self.gru(rnn_input, last_hidden.unsqueeze(0))
+        output, hidden = self.gru(rnn_input, last_hidden)
         output = output.squeeze(0)    # [batch, hidden_size]
         # context = context.squeeze(0)  # [batch, hidden]
         # output = torch.cat([output, context], 1)    # [batch, 2 * hidden]
@@ -169,7 +182,7 @@ class WSeq(nn.Module):
         self.context_encoder = Context_encoder(utter_hidden, context_hidden, 
                                                dropout=dropout) 
         self.decoder = Decoder(output_size, embed_size, decoder_hidden, 
-                               pretrained=pretrained)
+                               n_layer=utter_n_layer, dropout=dropout, pretrained=pretrained)
 
     def forward(self, src, tgt, lengths):
         # src: [turns, lengths, batch], tgt: [lengths, batch]
@@ -193,7 +206,7 @@ class WSeq(nn.Module):
 
         # decoding
         # tgt = tgt.transpose(0, 1)        # [seq_len, batch]
-        hidden = hidden.unsqueeze(0)     # [1, batch, hidden_size]
+        # hidden = hidden.unsqueeze(0)     # [1, batch, hidden_size]
         output = tgt[0, :]          # [batch]
         
         use_teacher = random.random() < self.teach_force
@@ -201,12 +214,12 @@ class WSeq(nn.Module):
             for t in range(1, maxlen):
                 output, hidden = self.decoder(output, hidden, context_output)
                 outputs[t] = output
-                output = tgt[t].clone().detach()
+                output = tgt[t]
         else:
             for t in range(1, maxlen):
                 output, hidden = self.decoder(output, hidden, context_output)
                 outputs[t] = output
-                output = torch.max(output, 1)[1]
+                output = output.topk(1)[1].squeeze().detach()
 
         return outputs    # [maxlen, batch, vocab_size]
 
@@ -214,36 +227,37 @@ class WSeq(nn.Module):
     def predict(self, src, maxlen, lengths, loss=False):
         # predict for test dataset, return outputs: [maxlen, batch_size]
         # src: [turn, max_len, batch_size], lengths: [turn, batch_size]
-        turn_size, batch_size = len(src), src[0].size(1)
-        outputs = torch.zeros(maxlen, batch_size)
-        floss = torch.zeros(maxlen, batch_size, self.output_size)
-        if torch.cuda.is_available():
-            outputs = outputs.cuda()
-            floss = floss.cuda()
+        with torch.no_grad():
+            turn_size, batch_size = len(src), src[0].size(1)
+            outputs = torch.zeros(maxlen, batch_size)
+            floss = torch.zeros(maxlen, batch_size, self.output_size)
+            if torch.cuda.is_available():
+                outputs = outputs.cuda()
+                floss = floss.cuda()
 
-        turns = []
-        for i in range(turn_size):
-            # sbatch = src[i].transpose(0, 1)
-            hidden = self.utter_encoder(src[i], lengths[i])
-            turns.append(hidden)
-        turns = torch.stack(turns)
+            turns = []
+            for i in range(turn_size):
+                # sbatch = src[i].transpose(0, 1)
+                hidden = self.utter_encoder(src[i], lengths[i])
+                turns.append(hidden)
+            turns = torch.stack(turns)
 
-        context_output, hidden = self.context_encoder(turns)
-        hidden = hidden.unsqueeze(0)
+            context_output, hidden = self.context_encoder(turns)
+            # hidden = hidden.unsqueeze(0)
 
-        output = torch.zeros(batch_size, dtype=torch.long).fill_(self.sos)
-        if torch.cuda.is_available():
-            output = output.cuda()
+            output = torch.zeros(batch_size, dtype=torch.long).fill_(self.sos)
+            if torch.cuda.is_available():
+                output = output.cuda()
 
-        for i in range(1, maxlen):
-            output, hidden = self.decoder(output, hidden, context_output)
-            floss[i] = output
-            output = output.max(1)[1]
-            outputs[i] = output
-        if loss:
-            return outputs, floss
-        else:
-            return outputs 
+            for i in range(1, maxlen):
+                output, hidden = self.decoder(output, hidden, context_output)
+                floss[i] = output
+                output = output.max(1)[1]
+                outputs[i] = output
+            if loss:
+                return outputs, floss
+            else:
+                return outputs 
 
 
 if __name__ == "__main__":

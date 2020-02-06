@@ -21,12 +21,6 @@ if [ $model = 'HRED' ]; then
 elif [ $model = 'WSeq' ]; then
     hierarchical=1
     graph=0
-elif [ $model = 'ReCoSa' ]; then
-    hierarchical=1
-    graph=0
-elif [ $model = 'Transformer' ]; then
-    hierarchical=0
-    graph=0
 elif [ $model = 'MReCoSa' ]; then
     hierarchical=1
     graph=0
@@ -36,22 +30,13 @@ elif [ $model = 'DSHRED' ]; then
 elif [ $model = 'Seq2Seq' ]; then
     hierarchical=0
     graph=0
+elif [ $model = 'Transformer' ]; then
+    hierarchical=0
+    graph=0
 elif [ $model = 'MTGCN' ]; then
     hierarchical=1
     graph=1
-elif [ $model = 'GCNRNN' ]; then
-    hierarchical=1
-    graph=1
 elif [ $model = 'GatedGCN' ]; then
-    hierarchical=1
-    graph=1
-elif [ $model = 'GatedGCN-no-role' ]; then
-    hierarchical=1
-    graph=1
-elif [ $model = 'GatedGCN-no-sequential' ]; then
-    hierarchical=1
-    graph=1
-elif [ $model = 'GatedGCN-no-correlation' ]; then
     hierarchical=1
     graph=1
 else
@@ -71,7 +56,10 @@ fi
 # for dailydialog dataset, 50 and 200 is the most appropriate settings
 if [ $hierarchical == 1 ]; then
     maxlen=50
-    batch_size=256
+    batch_size=244
+elif [ $transformer_decode == 1 ]; then
+    maxlen=150
+    batch_size=16
 else
     maxlen=150
     batch_size=64
@@ -85,6 +73,13 @@ if [ $mode = 'lm' ]; then
     python utils.py \
         --dataset $dataset \
         --mode lm 
+        
+elif [ $mode = 'transformer_preprocess' ]; then
+    echo "[!] Preprocess the dataset for trainsformer(GPT2) model"
+    python utils.py \
+        --dataset $dataset \
+        --mode preprocess_transformer \
+        --ctx 200
 
 elif [ $mode = 'perturbation' ]; then
     echo "[!] Begin to perturbation the source test dataset"
@@ -204,6 +199,8 @@ elif [ $mode = 'train' ]; then
     echo "[!] Begin to train the model"
     
     # set the lr_gamma as 1, means that don't use the learning rate schedule
+    # Transformer: lr(threshold) 1, 1e-6 / others: lr(threshold) 1e-4, 1e-6
+    # seed 30 is good for baselines
     CUDA_VISIBLE_DEVICES="$CUDA" python train.py \
         --src_train ./data/$dataset/src-train.txt \
         --tgt_train ./data/$dataset/tgt-train.txt \
@@ -248,7 +245,7 @@ elif [ $mode = 'train' ]; then
         --bleu nltk \
         --contextrnn \
         --no-debug \
-        --lr_step 50 \
+        --lr_mini 1e-6 \
         --lr_gamma 0.5 \
 
 elif [ $mode = 'translate' ]; then

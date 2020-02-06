@@ -94,9 +94,9 @@ class GatedGCNContext(nn.Module):
         self.conv1 = My_DoubleGatedGCN(size, inpt_size, self.kernel_rnn1, self.kernel_rnn2)
         self.conv2 = My_DoubleGatedGCN(size, inpt_size, self.kernel_rnn1, self.kernel_rnn2)
         self.conv3 = My_DoubleGatedGCN(size, inpt_size, self.kernel_rnn1, self.kernel_rnn2)
-        self.bn1 = nn.BatchNorm1d(num_features=inpt_size)
-        self.bn2 = nn.BatchNorm1d(num_features=inpt_size)
-        self.bn3 = nn.BatchNorm1d(num_features=inpt_size)
+        # self.bn1 = nn.BatchNorm1d(num_features=inpt_size)
+        # self.bn2 = nn.BatchNorm1d(num_features=inpt_size)
+        # self.bn3 = nn.BatchNorm1d(num_features=inpt_size)
 
         # rnn for background
         self.rnn = nn.GRU(inpt_size + user_embed_size, inpt_size, bidirectional=True)
@@ -107,6 +107,21 @@ class GatedGCNContext(nn.Module):
         
         # 100 is far bigger than the max turn lengths (cornell and dailydialog datasets)
         self.posemb = nn.Embedding(100, posemb_size)
+        self.init_weight()
+
+    def init_weight(self):
+        init.xavier_normal_(self.kernel_rnn1.weight_hh)
+        init.xavier_normal_(self.kernel_rnn1.weight_ih)
+        self.kernel_rnn1.bias_ih.data.fill_(0.0)
+        self.kernel_rnn1.bias_hh.data.fill_(0.0)
+        init.xavier_normal_(self.kernel_rnn2.weight_hh)
+        init.xavier_normal_(self.kernel_rnn2.weight_ih)
+        self.kernel_rnn2.bias_ih.data.fill_(0.0)
+        self.kernel_rnn2.bias_hh.data.fill_(0.0)
+        init.xavier_normal_(self.rnn.weight_hh_l0)
+        init.xavier_normal_(self.rnn.weight_ih_l0)
+        self.rnn.bias_ih_l0.data.fill_(0.0)
+        self.rnn.bias_hh_l0.data.fill_(0.0)
         
     def create_batch(self, gbatch, utter_hidden):
         '''create one graph batch
@@ -134,12 +149,13 @@ class GatedGCNContext(nn.Module):
         # utter_hidden: [turn_len, batch, inpt_size]
         # ub: [turn_len, batch, user_embed_size]
         # BiRNN First, rnn_x: [turn, batch, 2 * inpt_size]
-        rnn_x, _ = self.rnn(torch.cat([utter_hidden, ub], dim=-1))
-        rnn_x = self.linear1(rnn_x)    # [turn, batch, inpt_size]
+        rnn_x, rnnh = self.rnn(torch.cat([utter_hidden, ub], dim=-1))
+        rnn_x = torch.tanh(self.linear1(rnn_x))    # [turn, batch, inpt_size]
         turn_size = utter_hidden.size(0)
+        rnnh = torch.tanh(rnnh.sum(axis=0))
         
         if turn_size <= self.threshold:
-            return rnn_x    # [turn, batch, inpt_size]
+            return rnn_x, rnnh    # [turn, batch, inpt_size]
         
         batch, weights = self.create_batch(gbatch, rnn_x)
         x, edge_index, batch = batch.x, batch.edge_index, batch.batch
@@ -167,22 +183,25 @@ class GatedGCNContext(nn.Module):
         
         # [node, pos_emb + inpt_size + user_embed_size]
         x = torch.cat([x, pos, ub], dim=1)
-        x1 = F.relu(self.bn1(self.conv1(x, edge_index, edge_weight=weights)))
+        # x1 = F.relu(self.bn1(self.conv1(x, edge_index, edge_weight=weights)))
+        x1 = torch.tanh(self.conv1(x, edge_index, edge_weight=weights))
         x1_ = torch.cat([x1, pos, ub], dim=1)
-        x2 = F.relu(self.bn2(self.conv2(x1_, edge_index, edge_weight=weights)))
+        # x2 = F.relu(self.bn2(self.conv2(x1_, edge_index, edge_weight=weights)))
+        x2 = torch.tanh(self.conv2(x1_, edge_index, edge_weight=weights))
         x2_ = torch.cat([x2, pos, ub], dim=1)
-        x3 = F.relu(self.bn3(self.conv3(x2_, edge_index, edge_weight=weights)))
+        # x3 = F.relu(self.bn3(self.conv3(x2_, edge_index, edge_weight=weights)))
+        x3 = torch.tanh(self.conv3(x2_, edge_index, edge_weight=weights))
 
         # residual for overcoming over-smoothing, [nodes, inpt_size]
         x = x1 + x2 + x3
-        x = self.drop(x)
+        x = self.drop(torch.tanh(x))
 
         # [nodes/turn_len, output_size]
         # take apart to get the mini-batch
         x = torch.stack(x.chunk(batch_size, dim=0)).permute(1, 0, 2)    # [turn, batch, inpt_size]
         x = torch.cat([rnn_x, x], dim=2)    # [turn, batch, inpt_size * 2]
         x = torch.tanh(self.linear2(x))    # [turn, batch, output_size]
-        return x
+        return x, rnnh
 
     
 class Decoder_ggcn(nn.Module):
@@ -300,11 +319,11 @@ class GatedGCN(nn.Module):
 
         # GCN Context encoder
         # context_output: [turn, batch, output_size]
-        context_output = self.gcncontext(gbatch, turns, subatch)
+        context_output, rnnh = self.gcncontext(gbatch, turns, subatch)
         # context_output = context_output.permute(1, 0, 2)    # [turn, batch, hidden]
         
         ghidden = context_output[-1]    # [batch, decoder_hidden]
-        hidden = torch.stack([hidden, ghidden])    # [2, batch, hidden]
+        hidden = torch.stack([rnnh, ghidden])    # [2, batch, hidden]
         hidden = torch.cat([hidden, tubatch], 2)    # [2, batch, hidden+user_embed]
         hidden = self.hidden_drop(torch.tanh(self.hidden_proj(hidden)))  # [2, batch, hidden]
 
@@ -353,11 +372,11 @@ class GatedGCN(nn.Module):
 
             # GCN Context encoding
             # [batch, turn, hidden]
-            context_output = self.gcncontext(gbatch, turns, subatch)
+            context_output, rnnh = self.gcncontext(gbatch, turns, subatch)
             # context_output = context_output.permute(1, 0, 2)    # [turn, batch, hidden]
 
             ghidden = context_output[-1]    # [batch, decoder_hidden]
-            hidden = torch.stack([hidden, ghidden])    # [2, batch, hidden]
+            hidden = torch.stack([rnnh, ghidden])    # [2, batch, hidden]
             hidden = torch.cat([hidden, tubatch], 2)    # [batch, hidden+user_embed]
             hidden = self.hidden_drop(torch.tanh(self.hidden_proj(hidden)))  # [batch, hidden]
 

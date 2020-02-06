@@ -3,6 +3,7 @@
 # Time: 2019.9.14
 
 import torch
+from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import numpy as np
 from tqdm import tqdm
@@ -12,38 +13,56 @@ import random
 import nltk
 
 
-'''
-# Already move into the utils.py
-def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
-    # convert dataset into src: [datasize, turns, lengths]
-    # convert dataset into tgt: [datasize, lengths]
-    src_w2idx, src_idx2w = load_pickle(src_vocab)
-    tgt_w2idx, tgt_idx2w = load_pickle(tgt_vocab)
-    
-    # src 
-    with open(src) as f:
-        src_dataset = []
-        for line in f.readlines():
-            utterances = line.split('__eou__')
-            turn = []
-            for utterance in utterances:
-                line = [src_w2idx['<sos>']] + [src_w2idx.get(w, src_w2idx['<unk>']) for w in nltk.word_tokenize(utterance)] + [src_w2idx['<eos>']]
-                if len(line) > maxlen:
-                    line = [src_w2idx['<sos>']] + line[-maxlen:]
-                turn.append(line)
-            src_dataset.append(turn)
+# ========== Remember to run the preprocess function for transformers ==========
+class GPT2Dataset(Dataset):
 
-    # tgt
-    with open(tgt) as f:
-        tgt_dataset = []
+    def __init__(self, data_list):
+        self.data_list = data_list
+
+    def __getitem__(self, index):
+        input_ids = self.data_list[index].strip()
+        input_ids = [int(token_id) for token_id in input_ids.split()]
+        return input_ids
+
+    def __len__(self):
+        return len(self.data_list)
+    
+
+def collate_fn(batch):
+    """
+    padding for transformers model
+    """
+    pad_id = 0    # for bert tokenizer, the pad id is 0
+    input_ids = []
+    btc_size = len(batch)
+    max_input_len = 0
+    for btc_idx in range(btc_size):
+        if max_input_len < len(batch[btc_idx]):
+            max_input_len = len(batch[btc_idx])
+    for btc_idx in range(btc_size):
+        input_len = len(batch[btc_idx])
+        input_ids.append(batch[btc_idx])
+        input_ids[btc_idx].extend([pad_id] * (max_input_len - input_len))
+    b = torch.tensor(input_ids, dtype=torch.long)
+    if torch.cuda.is_available():
+        b = b.cuda()
+    return b
+    
+    
+def get_batch_data_transformer(path, batch_size):
+    # read the file
+    with open(path) as f:
+        data_list = []
         for line in f.readlines():
-            line = [tgt_w2idx['<sos>']] + [tgt_w2idx.get(w, tgt_w2idx['<unk>']) for w in nltk.word_tokenize(line)] + [tgt_w2idx['<eos>']]
-            if len(line) > maxlen:
-                line = [tgt_w2idx['<sos>']] + line[-maxlen:]
-            tgt_dataset.append(line)
- 
-    return src_dataset, tgt_dataset
-'''
+            line = line.strip()
+            data_list.append(line)
+    # create the dataset
+    dataset = GPT2Dataset(data_list)
+    dataloader = DataLoader(dataset, batch_size=batch_size, 
+                            shuffle=True, collate_fn=collate_fn)
+    return dataset, dataloader
+# ========== ==========
+    
 
 def load_data_flatten(src, tgt, src_vocab, tgt_vocab, maxlen):
     # sort by the lengths

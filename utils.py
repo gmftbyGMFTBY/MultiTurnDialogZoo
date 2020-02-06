@@ -18,6 +18,7 @@ import random
 from tqdm import tqdm
 from scipy.linalg import norm
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from transformers import BertTokenizer
 from model.layers import NoamOpt
 
 import nltk
@@ -645,6 +646,56 @@ def analyse_dataset(dataset):
     print(f'[!] turn length: {round(turn/tcounter, 4)}')
                 
     
+# ========== function for transformers (GPT2) ==========
+def transformer_preprocess(src_path, tgt_path, tokenized_file, 
+                           vocab_file='./config/vocab_en.txt', ctx=200):
+    '''
+    tokenize the dataset for NLG (GPT2), write the tokenized id into the tokenized_file.
+    more details can be found in https://github.com/yangjianxin1/GPT2-chitchat
+    '''
+    def clean_inside(s):
+        s = s.replace('<user0>', '')
+        s = s.replace('<user1>', '')
+        s = s.strip()
+        s = clean(s)
+        return s
+        
+    # create the Bert tokenizer of the GPT2 model
+    tokenizer = BertTokenizer(vocab_file=vocab_file)
+    
+    src_data, tgt_data = read_file(src_path), read_file(tgt_path)
+    src_data = [' '.join(i) for i in src_data]
+    tgt_data = [' '.join(i) for i in tgt_data]
+    assert len(src_data) == len(tgt_data), f'[!] length of src and tgt: {len(src_data)}/{len(tgt_data)}'
+    
+    # combine them
+    corpus = []
+    longest = 0
+    for s, t in tqdm(list(zip(src_data, tgt_data))):
+        item = [tokenizer.cls_token_id]   # [CLS] for each dialogue in the begining
+        s = s + ' __eou__ ' + t
+        s = clean_inside(s)
+        utterances = s.split('__eou__')
+        for utterance in utterances:
+            words = nltk.word_tokenize(utterance)
+            item.extend([tokenizer.convert_tokens_to_ids(word) for word in words])
+            item.append(tokenizer.sep_token_id)
+        if len(item) > longest:
+            longest = len(item)
+        item = item[:ctx]
+        corpus.append(item)
+        
+    # write into the file
+    with open(tokenized_file, 'w') as f:
+        for i in range(len(corpus)):
+            words = [str(word) for word in corpus[i]]
+            f.write(f'{" ".join(words)}')
+            if i < len(corpus) - 1:
+                f.write('\n')
+                
+    print(f'[!] Preprocess the data for the transformers(GPT2), the longest sentence :{longest}, write the data into {tokenized_file}.')
+          
+    
 
 
 if __name__ == "__main__":
@@ -676,6 +727,7 @@ if __name__ == "__main__":
     parser.add_argument('--ngram', type=int, default=3)
     parser.add_argument('--gamma', type=float, default=0.5)
     parser.add_argument('--lang', type=str, default='en')
+    parser.add_argument('--ctx', type=int, default=200)
     args = parser.parse_args()
 
     mode = args.mode
@@ -707,5 +759,18 @@ if __name__ == "__main__":
     elif mode == 'lm':
         data = read_file(f'./data/{args.dataset}/src-train.txt')
         train_ngram_lm(args.dataset, data, ngram=args.ngram, gamma=args.gamma)
+    elif mode == 'preprocess_transformer':
+        src_train_path = f'data/{args.dataset}/src-train.txt'
+        tgt_train_path = f'data/{args.dataset}/tgt-train.txt'
+        train_path = f'data/{args.dataset}/train.txt'
+        src_test_path = f'data/{args.dataset}/src-test.txt'
+        tgt_test_path = f'data/{args.dataset}/tgt-test.txt'
+        test_path = f'data/{args.dataset}/test.txt'
+        src_dev_path = f'data/{args.dataset}/src-dev.txt'
+        tgt_dev_path = f'data/{args.dataset}/tgt-dev.txt'
+        dev_path = f'data/{args.dataset}/dev.txt'
+        transformer_preprocess(src_train_path, tgt_train_path, train_path, ctx=args.ctx)
+        transformer_preprocess(src_test_path, tgt_test_path, test_path, ctx=args.ctx)
+        transformer_preprocess(src_dev_path, tgt_dev_path, dev_path, ctx=args.ctx)
     else:
         print(f'[!] wrong mode to run the script')
