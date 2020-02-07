@@ -216,6 +216,36 @@ def generate_bert_embedding(vocab, path):
     print(f'[!] write the bert embedding into {path}')
     
     
+def create_the_abs_graph(turns, weights=[1, 1], threshold=1, bidir=False, self_loop=False):
+    edges = {}
+    s_w, u_w = weights
+    turn_len = len(turns)
+    num_e = 0
+    for i in range(turn_len):
+        for j in range(turn_len):
+            if i == j:
+                if self_loop:
+                    edges[(i, j)] = [s_w]
+                    num_e += 1
+            else:
+                edges[(i, j)] = [s_w]
+                num_e += 1
+                
+    # clean the edges
+    e, w = [[], []], []
+    for src, tgt in edges.keys():
+        e[0].append(src)
+        e[1].append(tgt)
+        w.append(max(edges[(src, tgt)]))
+        
+        if bidir and src != tgt:
+            e[0].append(tgt)
+            e[1].append(src)
+            w.append(max(edges[(src, tgt)]))
+            
+    return (e, w), num_e
+    
+    
 def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.4, bidir=False):
     '''create the weighted directed graph of one conversation
     sequenutial edge, user connected edge, [BERT/PMI] edge
@@ -354,12 +384,13 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
     return src_dataset, src_user, tgt_dataset, tgt_user
 
 
-def generate_graph(dialogs, path, threshold=0.75, bidir=False, lang='en'):
+def generate_graph(dialogs, path, fully=False, threshold=0.75, 
+                   bidir=False, lang='en', self_loop=False):
     # dialogs: [datasize, turns]
     # return: [datasize, (2, num_edges)/ (num_edges)]
     # **make sure the bert-as-service is running**
     edges = []
-    se, ue, pe = 0, 0, 0
+    sum_e = 0
     if lang == 'en':
         wbpath = '/home/lt/data/File/wordembedding/glove/glove.6B.300d.txt'
     elif lang == 'zh':
@@ -367,20 +398,26 @@ def generate_graph(dialogs, path, threshold=0.75, bidir=False, lang='en'):
     else:
         raise Exception(f'[!] unknown language of word embedding path {lang}')
     print(f'[!] prepare to load the 300 embedding from {wbpath} (you can change this path)')
-    vocab = load_glove_embedding(wbpath, lang=lang)
+    if not fully:
+        vocab = load_glove_embedding(wbpath, lang=lang)
     for dialog in tqdm(dialogs):
-        edge, ses, ueu, pep = create_the_graph(dialog, vocab, threshold=threshold,
-                                               bidir=bidir)
-        se += ses
-        ue += ueu
-        pe += pep
+        if fully:
+            edge, num_e = create_the_abs_graph(dialog, weights=[1, 1],
+                                               threshold=threshold, 
+                                               bidir=bidir, self_loop=self_loop)
+            sum_e += num_e
+        else:
+            edge, ses, ueu, pep = create_the_graph(dialog, vocab, 
+                                                   threshold=threshold,
+                                                   bidir=bidir)
+            sum_e += ses + ueu + pep
         edges.append(edge)
 
     with open(path, 'wb') as f:
         pickle.dump(edges, f)
 
     print(f'[!] graph information is converted in {path}')
-    print(f'[!] Avg se: {round(se / len(dialogs), 4)}; Avg ue: {round(ue / len(dialogs), 4)}; Avg pe: {round(pe / len(dialogs), 4)}')
+    print(f'[!] Avg number of edges: {round(sum_e / len(dialogs), 4)}')
 
 
 def idx2sent(data, vocab):
@@ -694,7 +731,41 @@ def transformer_preprocess(src_path, tgt_path, tokenized_file,
                 f.write('\n')
                 
     print(f'[!] Preprocess the data for the transformers(GPT2), the longest sentence :{longest}, write the data into {tokenized_file}.')
-          
+    
+    
+# From https://github.com/jadore801120/attention-is-all-you-need-pytorch/blob/master/transformer/Optim.py
+# ========== lr scheduler for transformer ==========
+class ScheduledOptim():
+    '''A simple wrapper class for learning rate scheduling'''
+
+    def __init__(self, optimizer, d_model, n_warmup_steps):
+        self._optimizer = optimizer
+        self.n_warmup_steps = n_warmup_steps
+        self.n_current_steps = 0
+        self.init_lr = np.power(d_model, -0.5)
+
+    def step_and_update_lr(self):
+        "Step with the inner optimizer"
+        self._update_learning_rate()
+        self._optimizer.step()
+
+    def zero_grad(self):
+        "Zero out the gradients by the inner optimizer"
+        self._optimizer.zero_grad()
+
+    def _get_lr_scale(self):
+        return np.min([
+            np.power(self.n_current_steps, -0.5),
+            np.power(self.n_warmup_steps, -1.5) * self.n_current_steps])
+
+    def _update_learning_rate(self):
+        ''' Learning rate scheduling per step '''
+
+        self.n_current_steps += 1
+        lr = self.init_lr * self._get_lr_scale()
+
+        for param_group in self._optimizer.param_groups:
+            param_group['lr'] = lr
     
 
 
@@ -707,7 +778,7 @@ if __name__ == "__main__":
             help='file for generating the vocab')
     parser.add_argument('--vocab', type=str, default='',
             help='input or output vocabulary')
-    parser.add_argument('--cutoff', type=int, default=0000,
+    parser.add_argument('--cutoff', type=int, default=0,
             help='cutoff of the vocabulary')
     parser.add_argument('--pretrained', type=str, default=None,
             help='Pretrained embedding file')
@@ -728,6 +799,11 @@ if __name__ == "__main__":
     parser.add_argument('--gamma', type=float, default=0.5)
     parser.add_argument('--lang', type=str, default='en')
     parser.add_argument('--ctx', type=int, default=200)
+    parser.add_argument('--fully', dest='fully', action='store_true')
+    parser.add_argument('--no-fully', dest='fully', action='store_false')
+    parser.add_argument('--self-loop', dest='self_loop', action='store_true')
+    parser.add_argument('--no-self-loop', dest='self_loop', action='store_false')
+    
     args = parser.parse_args()
 
     mode = args.mode
@@ -746,7 +822,9 @@ if __name__ == "__main__":
         ppdataset = idx2sent(src_dataset, args.src_vocab)
         print(f'[!] begin to create the graph')
         # ipdb.set_trace()
-        generate_graph(ppdataset, args.graph, threshold=args.threshold, bidir=args.bidir, lang=args.lang)
+        generate_graph(ppdataset, args.graph, threshold=args.threshold,
+                       bidir=args.bidir, lang=args.lang, fully=args.fully,
+                       self_loop=args.self_loop)
     elif mode == 'stat':
         # too slow, ban it
         # analyse_graph(args.graph, hops=args.hops)

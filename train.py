@@ -22,7 +22,7 @@ from utils import *
 from data_loader import *
 from metric.metric import *
 from model.seq2seq_attention import Seq2Seq
-from model.seq2seq_transformer import transformer_gpt2
+from model.seq2seq_transformer import Transformer
 from model.HRED import HRED
 from model.WSeq import WSeq
 from model.DSHRED import DSHRED
@@ -37,24 +37,18 @@ def train(train_iter, net, optimizer, vocab_size, pad,
     # choose nll_loss for training the objective function
     net.train()
     total_loss, batch_num = 0.0, 0
-    if transformer_decode:
-        # for transformers, pad ids is 0
-        criterion = nn.NLLLoss(ignore_index=0)
-    else:
-        criterion = nn.NLLLoss(ignore_index=pad)
+    criterion = nn.NLLLoss(ignore_index=pad)
 
     pbar = tqdm(train_iter)
     for idx, batch in enumerate(pbar):
         # [turn, length, batch], [seq_len, batch] / [seq_len, batch], [seq_len, batch]
         if graph:
             sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths = batch
-            batch_size = tbatch.shape[1]
         elif transformer_decode:
-            sbatch = batch.transpose(0, 1)    # [seq, batch]
-            batch_size = sbatch.shape[-1]
+            sbatch, tbatch, src_key_padding_mask, tgt_key_padding_mask = batch
         else:
             sbatch, tbatch, turn_lengths = batch
-            batch_size = tbatch.shape[1]
+        batch_size = tbatch.shape[1]
         if batch_size == 1:
             # batchnorm will throw error when batch_size is 1
             continue
@@ -66,18 +60,18 @@ def train(train_iter, net, optimizer, vocab_size, pad,
             output = net(sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths)
         else:
             if transformer_decode:
-                output = net(sbatch)
+                memory_key_padding_mask = src_key_padding_mask.clone()
+                # ipdb.set_trace()
+                output = net(sbatch, tbatch, 
+                             src_key_padding_mask, 
+                             tgt_key_padding_mask, 
+                             memory_key_padding_mask)
             else:
                 output = net(sbatch, tbatch, turn_lengths)
         
         if transformer_decode:
-            # transformer GPT2 language modeling
-            # output: [batch, seq, vocab], sbatch: [seq, batch]
-            sbatch_ = sbatch.transpose(0, 1)    # [batch, seq]
-            shift_output = output[..., :-1, :].contiguous()
-            shift_label = sbatch_[..., 1:].contiguous()
-            loss = criterion(shift_output.view(-1, shift_output.shape[-1]),
-                             shift_label.view(-1))
+            loss = criterion(output[:-1].view(-1, vocab_size),
+                             tbatch[1:].contiguous().view(-1))
         else:
             loss = criterion(output[1:].view(-1, vocab_size),
                              tbatch[1:].contiguous().view(-1))
@@ -87,7 +81,10 @@ def train(train_iter, net, optimizer, vocab_size, pad,
 
         loss.backward()
         clip_grad_norm_(net.parameters(), grad_clip)
-        optimizer.step()
+        if transformer_decode:
+            optimizer.step_and_update_lr()
+        else:
+            optimizer.step()
         total_loss += loss.item()
         batch_num += 1
 
@@ -107,23 +104,18 @@ def validation(data_iter, net, vocab_size, pad,
                graph=False, transformer_decode=False, debug=False):
     net.eval()
     batch_num, total_loss = 0, 0.0
-    if transformer_decode:
-        criterion = nn.NLLLoss(ignore_index=0)
-    else:
-        criterion = nn.NLLLoss(ignore_index=pad)
+    criterion = nn.NLLLoss(ignore_index=pad)
 
     pbar = tqdm(data_iter)
 
     for idx, batch in enumerate(pbar):
         if graph:
             sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths = batch
-            batch_size = tbatch.shape[1]
         elif transformer_decode:
-            sbatch = batch.transpose(0, 1)
-            batch_size = sbatch.shape[-1]
+            sbatch, tbatch, src_key_padding_mask, tgt_key_padding_mask = batch
         else:
             sbatch, tbatch, turn_lengths = batch
-            batch_size = tbatch.shape[1]
+        batch_size = tbatch.shape[1]
         if batch_size == 1:
             continue
 
@@ -131,20 +123,17 @@ def validation(data_iter, net, vocab_size, pad,
             output = net(sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths)
         else:
             if transformer_decode:
-                output = net(batch)
+                memory_key_padding_mask = src_key_padding_mask.clone()
+                output = net(sbatch, tbatch, 
+                             src_key_padding_mask, 
+                             tgt_key_padding_mask, 
+                             memory_key_padding_mask)
             else:
                 output = net(sbatch, tbatch, turn_lengths)
-
+                
         if transformer_decode:
-            # transformer GPT2 language modeling
-            # loss = criterion(output[:-1].view(-1, vocab_size),
-            #                  tbatch[1:].contiguous().view(-1))
-            # output: [batch, seq, vocab], sbatch: [seq, batch]
-            sbatch_ = sbatch.transpose(0, 1)
-            shift_output = output[..., :-1, :].contiguous()
-            shift_label = sbatch_[..., 1:].contiguous()
-            loss = criterion(shift_output.view(-1, shift_output.shape[-1]),
-                             shift_label.view(-1))
+            loss = criterion(output[:-1].view(-1, vocab_size),
+                             tbatch[1:].contiguous().view(-1))
         else:
             loss = criterion(output[1:].view(-1, vocab_size),
                              tbatch[1:].contiguous().view(-1))
@@ -160,11 +149,6 @@ def validation(data_iter, net, vocab_size, pad,
             word_idx = utterance.data.max(1)[1]       # [length]
 
     return round(total_loss / batch_num, 4)
-
-
-def test(data_iter, net, vocab_size, pad, debug=False, graph=False):
-    test_loss = validation(data_iter, net, vocab_size, pad, debug=debug, graph=graph)
-    return test_loss
 
 
 def translate(data_iter, net, **kwargs):
@@ -187,6 +171,8 @@ def translate(data_iter, net, **kwargs):
         for batch in pbar:
             if kwargs['graph'] == 1:
                 sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths = batch
+            elif kwargs['transformer_decode'] == 1:
+                sbatch, tbatch, src_key_padding_mask, tgt_key_padding_mask = batch
             else:
                 sbatch, tbatch, turn_lengths = batch
 
@@ -203,21 +189,34 @@ def translate(data_iter, net, **kwargs):
                                           subatch, tubatch, 
                                           len(tbatch), turn_lengths,
                                           loss=True)
+            elif kwargs['transformer_decode'] == 1:
+                memory_key_padding_mask = src_key_padding_mask.clone()
+                output, _ = net.predict(sbatch, src_key_padding_mask,
+                                        memory_key_padding_mask, len(tbatch))
             else:
                 output, _ = net.predict(sbatch, len(tbatch), turn_lengths,
                                           loss=True)
                 
             # true working ppl by using teach_force
-            hold_teach = net.teach_force
-            net.teach_force = 1.0
+            if kwargs['transformer_decode'] == 0:
+                hold_teach = net.teach_force
+                net.teach_force = 1.0
             if kwargs['graph'] == 1:
                 f_l = net(sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths)
+            elif kwargs['transformer_decode'] == 1:
+                f_l = net(sbatch, tbatch, src_key_padding_mask, tgt_key_padding_mask,
+                          memory_key_padding_mask)
             else:
                 f_l = net(sbatch, tbatch, turn_lengths)
-            net.teach_force = hold_teach
+            if kwargs['transformer_decode'] == 0:
+                net.teach_force = hold_teach
             
-            loss = criterion(f_l[1:].view(-1, len(tgt_w2idx)),
-                             tbatch[1:].contiguous().view(-1))
+            if kwargs['transformer_decode']:
+                loss = criterion(f_l[:-1].view(-1, len(tgt_w2idx)),
+                                 tbatch[1:].contiguous().view(-1))
+            else:
+                loss = criterion(f_l[1:].view(-1, len(tgt_w2idx)),
+                                 tbatch[1:].contiguous().view(-1))
             batch_num += 1
             total_loss += loss.item()
             
@@ -350,11 +349,7 @@ def main(**kwargs):
     src_vocab, tgt_vocab = load_pickle(kwargs['src_vocab']), load_pickle(kwargs['tgt_vocab'])
     src_w2idx, src_idx2w = src_vocab
     tgt_w2idx, tgt_idx2w = tgt_vocab
-    
-    if kwargs['transformer_decode']:
-        print(f'[!] transformer vocab size: 30522, refer to config/vocab_en.txt')
-    else:
-        print(f'[!] load vocab over, src/tgt vocab size: {len(src_idx2w)}/{len(tgt_idx2w)}')
+    print(f'[!] load vocab over, src/tgt vocab size: {len(src_idx2w)}/{len(tgt_idx2w)}')
 
     # pretrained path
     pretrained = None
@@ -382,7 +377,11 @@ def main(**kwargs):
                    utter_n_layer=kwargs['utter_n_layer'], dropout=kwargs['dropout'],
                    pretrained=pretrained)
     elif kwargs['model'] == 'Transformer':
-        net = transformer_gpt2(kwargs['model_config'])
+        net = Transformer(len(src_w2idx), len(tgt_w2idx), kwargs['d_model'], 
+                          kwargs['nhead'], kwargs['num_encoder_layers'], 
+                          kwargs['num_decoder_layers'], kwargs['dim_feedforward'], 
+                          kwargs['dropout'], sos=tgt_w2idx['<sos>'], 
+                          pad=tgt_w2idx['<pad>'])
     elif kwargs['model'] == 'MReCoSa':
         net = MReCoSa(len(src_w2idx), 512, len(tgt_w2idx), 512, 512,
                       teach_force=kwargs['teach_force'], pad=tgt_w2idx['<pad>'],
@@ -424,15 +423,10 @@ def main(**kwargs):
 
     # prepare optimizer
     if kwargs['transformer_decode']:
-        print(f'[!] Optimizer AdamW')
-        optimizer = transformers.AdamW(net.parameters(), lr=kwargs['lr'],
-                                       correct_bias=True)
-        # create the dataloader first
-        train_dataset, train_iter = get_batch_data_transformer(f'data/{kwargs["dataset"]}/train.txt', batch_size=kwargs['batch_size'])
-        _, test_iter = get_batch_data_transformer(f'data/{kwargs["dataset"]}/test.txt', batch_size=kwargs['batch_size'])
-        _, dev_iter = get_batch_data_transformer(f'data/{kwargs["dataset"]}/dev.txt', batch_size=kwargs['batch_size'])
-        total_steps = int(train_dataset.__len__() * kwargs['epochs'] / kwargs['batch_size'])
-        scheduler = transformers.get_linear_schedule_with_warmup(optimizer, num_warmup_steps=kwargs['warmup_step'], num_training_steps=total_steps)
+        print(f'[!] Optimizer Adam with weight decay')
+        optimizer = ScheduledOptim(optim.Adam(net.parameters(), 
+                                              betas=(0.9, 0.98), eps=1e-9),
+                                   kwargs['d_model'], kwargs['warmup_step'])
     else:
         print(f'[!] Optimizer Adam')
         optimizer = optim.Adam(net.parameters(), lr=kwargs['lr'])
@@ -509,6 +503,25 @@ def main(**kwargs):
                                                   kwargs['tgt_vocab'],
                                                   kwargs['batch_size'],
                                                   kwargs['maxlen'])
+            else:
+                train_iter = get_batch_data_flatten_tf(kwargs['src_train'],
+                                                    kwargs['tgt_train'],
+                                                    kwargs['src_vocab'],
+                                                    kwargs['tgt_vocab'],
+                                                    kwargs['batch_size'],
+                                                    kwargs['maxlen'])
+                test_iter = get_batch_data_flatten_tf(kwargs['src_test'], 
+                                                   kwargs['tgt_test'],
+                                                   kwargs['src_vocab'], 
+                                                   kwargs['tgt_vocab'],
+                                                   kwargs['batch_size'], 
+                                                   kwargs['maxlen'])
+                dev_iter = get_batch_data_flatten_tf(kwargs['src_dev'], 
+                                                  kwargs['tgt_dev'],
+                                                  kwargs['src_vocab'],
+                                                  kwargs['tgt_vocab'],
+                                                  kwargs['batch_size'],
+                                                  kwargs['maxlen'])
 
                 
         # ========== train session begin ==========
@@ -526,11 +539,17 @@ def main(**kwargs):
         # and write the lr schedule, and teach force
         writer.add_scalar(f'{writer_str}-Loss/train', train_loss, epoch)
         writer.add_scalar(f'{writer_str}-Loss/dev', val_loss, epoch)
-        writer.add_scalar(f'{writer_str}-Loss/lr', 
-                          optimizer.state_dict()['param_groups'][0]['lr'], 
-                          epoch)
-        writer.add_scalar(f'{writer_str}-Loss/teach', net.teach_force,
-                          epoch)
+        if kwargs['transformer_decode']:
+            writer.add_scalar(f'{writer_str}-Loss/lr',
+                              optimizer._optimizer.state_dict()['param_groups'][0]['lr'],
+                              epoch)
+            writer.add_scalar(f'{writer_str}-Loss/teach', 1, epoch)
+        else:
+            writer.add_scalar(f'{writer_str}-Loss/lr', 
+                              optimizer.state_dict()['param_groups'][0]['lr'], 
+                              epoch)
+            writer.add_scalar(f'{writer_str}-Loss/teach', net.teach_force,
+                              epoch)
         
         if not best_val_loss or val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -539,7 +558,11 @@ def main(**kwargs):
             patience += 1
                           
         # checkpoint state
-        state = {'net': net.state_dict(), 'opt': optimizer.state_dict(), 
+        if kwargs['transformer_decode']:
+            optim_state = optimizer._optimizer.state_dict()
+        else:
+            optim_state = optimizer.state_dict()
+        state = {'net': net.state_dict(), 'opt': optim_state, 
                  'epoch': epoch, 'patience': patience}
         torch.save(state, 
                        f'./ckpt/{kwargs["dataset"]}/{kwargs["model"]}/vloss_{val_loss}_epoch_{epoch}.pt')
@@ -569,8 +592,8 @@ def main(**kwargs):
         # lr schedule change, monitor the evaluation loss
         if kwargs['transformer_decode'] == 0:
             scheduler.step(val_loss)
-        else:
-            scheduler.step()
+        # else:
+        #     scheduler.step()
         
 
     pbar.close()
@@ -627,6 +650,12 @@ if __name__ == "__main__":
                         help='transformer decoder need a different training process')
     parser.add_argument('--d_model', type=int, default=512, 
                         help='d_model for transformer')
+    parser.add_argument('--nhead', type=int, default=8, 
+                        help='head number for transformer')
+    parser.add_argument('--num_encoder_layers', type=int, default=6)
+    parser.add_argument('--num_decoder_layers', type=int, default=6)
+    parser.add_argument('--dim_feedforward', type=int, default=2048)
+    parser.add_argument('--warmup_step', type=int, default=4000, help='warm up steps')
     parser.add_argument('--contextrnn', dest='contextrnn', action='store_true')
     parser.add_argument('--no-contextrnn', dest='contextrnn', action='store_false')
     parser.add_argument('--position_embed_size', type=int, default=30)
@@ -649,9 +678,6 @@ if __name__ == "__main__":
     parser.add_argument('--bleu', type=str, default='nltk', help='nltk or perl')
     parser.add_argument('--lr_mini', type=float, default=1e-6, help='minial lr (threshold)')
     parser.add_argument('--lr_gamma', type=float, default=0.8, help='lr schedule gamma factor')
-    parser.add_argument('--warmup_step', type=int, default=2000, help='warm up steps')
-    parser.add_argument('--model_config', type=str, default='config/model_small.json', help='the gpt2 model config file, only for GPT2 (Transformer)')
-
 
     args = parser.parse_args()
 

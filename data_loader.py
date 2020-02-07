@@ -14,6 +14,7 @@ import nltk
 
 
 # ========== Remember to run the preprocess function for transformers ==========
+'''
 class GPT2Dataset(Dataset):
 
     def __init__(self, data_list):
@@ -61,10 +62,14 @@ def get_batch_data_transformer(path, batch_size):
     dataloader = DataLoader(dataset, batch_size=batch_size, 
                             shuffle=True, collate_fn=collate_fn)
     return dataset, dataloader
+'''
 # ========== ==========
     
 
 def load_data_flatten(src, tgt, src_vocab, tgt_vocab, maxlen):
+    '''
+    Used by vanilla seq2seq with attention and transformer
+    '''
     # sort by the lengths
     src_w2idx, src_idx2w = load_pickle(src_vocab)
     tgt_w2idx, tgt_idx2w = load_pickle(tgt_vocab)
@@ -224,6 +229,66 @@ def get_batch_data_flatten(src, tgt, src_vocab, tgt_vocab, batch_size, maxlen):
         fidx = bidx
 
         yield sbatch, tbatch, turn_lengths
+        
+        
+def get_batch_data_flatten_tf(src, tgt, src_vocab, tgt_vocab, batch_size, maxlen):
+    '''
+    1. No turn_lengths because of transformer
+    2. src_key_padding_mask and tgt_key_padding_mask
+    '''
+    # for transformer, return
+    # src_mask and tgt_mask
+    src_w2idx, src_idx2w = load_pickle(src_vocab)
+    tgt_w2idx, tgt_idx2w = load_pickle(tgt_vocab)
+    
+    # [datasize, lengths], [datasize, lengths]
+    src_dataset, tgt_dataset = load_data_flatten(src, tgt, src_vocab, tgt_vocab, maxlen)
+
+    turns = [len(i) for i in src_dataset]
+    turnsidx = np.argsort(turns)
+
+    # sort by the lengths
+    src_dataset = [src_dataset[i] for i in turnsidx]
+    tgt_dataset = [tgt_dataset[i] for i in turnsidx]
+
+    # generate the batch
+    turns = [len(i) for i in src_dataset]
+    fidx, bidx = 0, 0
+    while fidx < len(src_dataset):
+        bidx = fidx + batch_size
+        sbatch, tbatch = src_dataset[fidx:bidx], tgt_dataset[fidx:bidx]
+        # shuffle
+        shuffleidx = np.arange(0, len(sbatch))
+        np.random.shuffle(shuffleidx)
+        sbatch = [sbatch[idx] for idx in shuffleidx]
+        tbatch = [tbatch[idx] for idx in shuffleidx]
+        
+        bs = len(sbatch)
+
+        # pad sbatch and tbatch, [batch, seq]
+        pad_sequence(src_w2idx['<pad>'], sbatch, bs)
+        pad_sequence(tgt_w2idx['<pad>'], tbatch, bs)
+        
+        # obtain the mask
+        src_key_padding_mask, tgt_key_padding_mask = [], []
+        for src_seq, tgt_seq in zip(sbatch, tbatch):
+            src_key_padding_mask.append([True if i == src_w2idx['<pad>'] else False for i in src_seq])
+            tgt_key_padding_mask.append([True if i == tgt_w2idx['<pad>'] else False for i in tgt_seq])
+        
+        # [seq_len, batch]
+        sbatch = torch.tensor(sbatch, dtype=torch.long).transpose(0, 1)
+        tbatch = torch.tensor(tbatch, dtype=torch.long).transpose(0, 1)
+        src_key_padding_mask = torch.tensor(src_key_padding_mask)
+        tgt_key_padding_mask = torch.tensor(tgt_key_padding_mask)
+        if torch.cuda.is_available():
+            tbatch = tbatch.cuda()
+            sbatch = sbatch.cuda()
+            src_key_padding_mask = src_key_padding_mask.cuda()
+            tgt_key_padding_mask = tgt_key_padding_mask.cuda()
+
+        fidx = bidx
+
+        yield sbatch, tbatch, src_key_padding_mask, tgt_key_padding_mask
         
         
 def get_batch_data_graph(src, tgt, graph, src_vocab, tgt_vocab, 

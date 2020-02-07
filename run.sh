@@ -54,12 +54,12 @@ fi
 
 # maxlen and batch_size
 # for dailydialog dataset, 50 and 200 is the most appropriate settings
-if [ $hierarchical == 1 ]; then
+if [ $hierarchical = 1 ]; then
     maxlen=50
-    batch_size=244
-elif [ $transformer_decode == 1 ]; then
+    batch_size=128
+elif [ $transformer_decode = 1 ]; then
     maxlen=150
-    batch_size=16
+    batch_size=64
 else
     maxlen=150
     batch_size=64
@@ -144,11 +144,13 @@ elif [ $mode = 'graph' ]; then
         --tgt ./data/$dataset/tgt-train.txt \
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
-        --graph ./processed/$dataset/train-graph-no-correlation.pkl \
+        --graph ./processed/$dataset/train-graph.pkl \
         --threshold 0.4 \
         --maxlen $maxlen \
         --no-bidir \
-        --lang $3
+        --lang $3 \
+        --fully \
+        --no-self-loop \
     
     python utils.py \
         --mode graph \
@@ -156,11 +158,13 @@ elif [ $mode = 'graph' ]; then
         --tgt ./data/$dataset/tgt-test.txt \
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
-        --graph ./processed/$dataset/test-graph-no-correlation.pkl \
+        --graph ./processed/$dataset/test-graph.pkl \
         --threshold 0.4 \
         --maxlen $maxlen \
         --no-bidir \
-        --lang $3
+        --lang $3 \
+        --fully \
+        --no-self-loop \
 
     python utils.py \
         --mode graph \
@@ -168,11 +172,13 @@ elif [ $mode = 'graph' ]; then
         --tgt ./data/$dataset/tgt-dev.txt \
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
-        --graph ./processed/$dataset/dev-graph-no-correlation.pkl \
+        --graph ./processed/$dataset/dev-graph.pkl \
         --threshold 0.4 \
         --maxlen $maxlen \
         --no-bidir \
-        --lang $3
+        --lang $3 \
+        --fully \
+        --no-self-loop \
         
 elif [ $mode = 'train' ]; then
     # cp -r ./ckpt/$dataset/$model ./bak/ckpt    # too big, stop back up it
@@ -231,7 +237,11 @@ elif [ $mode = 'train' ]; then
         --dataset $dataset \
         --grad_clip 3.0 \
         --dropout 0.3 \
-        --d_model 500 \
+        --d_model 512 \
+        --nhead 8 \
+        --num_encoder_layers 6 \
+        --num_decoder_layers 6 \
+        --dim_feedforward 2048 \
         --hierarchical $hierarchical \
         --transformer_decode $transformer_decode \
         --graph $graph \
@@ -247,6 +257,7 @@ elif [ $mode = 'train' ]; then
         --no-debug \
         --lr_mini 1e-6 \
         --lr_gamma 0.5 \
+        --warmup_step 4000 \
 
 elif [ $mode = 'translate' ]; then
     rm ./processed/$dataset/$model/ppl.txt

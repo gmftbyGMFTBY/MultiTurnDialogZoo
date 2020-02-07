@@ -367,6 +367,17 @@ class My_GATRNNConv(nn.Module):
         return '{}(in_channels={})'.format(
             self.__class__.__name__, self.in_channels)
 
+    
+def gen_nopeek_mask(length):
+    # for transformer masking
+    mask = torch.triu(torch.ones(length, length)) == 1
+    mask = mask.transpose(0, 1)
+    mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+    
+    if torch.cuda.is_available():
+        mask = mask.cuda()
+
+    return mask
 
 
 if __name__ == "__main__":
