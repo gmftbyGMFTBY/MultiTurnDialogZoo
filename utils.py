@@ -397,9 +397,11 @@ def generate_graph(dialogs, path, fully=False, threshold=0.75,
         wbpath = '/home/lt/data/File/wordembedding/chinese/sgns.target.word-word.dynwin5.thr10.neg5.dim300.iter5'
     else:
         raise Exception(f'[!] unknown language of word embedding path {lang}')
-    print(f'[!] prepare to load the 300 embedding from {wbpath} (you can change this path)')
     if not fully:
+        print(f'[!] prepare to load the 300 embedding from {wbpath} (you can change this path)')
         vocab = load_glove_embedding(wbpath, lang=lang)
+    else:
+        print(f'[!] donot need the word embedding for constructing the graph')
     for dialog in tqdm(dialogs):
         if fully:
             edge, num_e = create_the_abs_graph(dialog, weights=[1, 1],
@@ -436,15 +438,6 @@ def idx2sent(data, vocab):
             turns.append(utterance)
         datasets.append(turns)
     return datasets
-    
-    
-def get_std_opt(model):
-    # return the speical opt for transformer-based models
-    return NoamOpt(model.embed_size, 2, 4000,
-                   torch.optim.Adam(model.parameters(), 
-                                    lr=0, 
-                                    betas=(0.9, 0.98), 
-                                    eps=1e-9))
 
 # ========== stst of the graph ========== #
 def analyse_graph(path, hops=3):

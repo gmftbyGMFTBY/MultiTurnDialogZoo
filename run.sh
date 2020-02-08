@@ -1,6 +1,6 @@
 #!/bin/bash
 # Author: GMFTBY
-# Time: 2019.9.24
+# Time: 2020.2.8
 
 mode=$1     # graph/stat/train/translate/eval/curve
 dataset=$2
@@ -59,7 +59,7 @@ if [ $hierarchical = 1 ]; then
     batch_size=128
 elif [ $transformer_decode = 1 ]; then
     maxlen=150
-    batch_size=64
+    batch_size=48
 else
     maxlen=150
     batch_size=64
@@ -205,8 +205,7 @@ elif [ $mode = 'train' ]; then
     echo "[!] Begin to train the model"
     
     # set the lr_gamma as 1, means that don't use the learning rate schedule
-    # Transformer: lr(threshold) 1, 1e-6 / others: lr(threshold) 1e-4, 1e-6
-    # seed 30 is good for baselines
+    # Transformer: lr(threshold) 1e-4, 1e-6 / others: lr(threshold) 1e-4, 1e-6
     CUDA_VISIBLE_DEVICES="$CUDA" python train.py \
         --src_train ./data/$dataset/src-train.txt \
         --tgt_train ./data/$dataset/tgt-train.txt \

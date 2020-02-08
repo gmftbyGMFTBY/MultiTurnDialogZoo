@@ -14,19 +14,22 @@ import ipdb
 
 
 # BLEU of NLTK
-# def cal_BLEU(refer, candidate, ngram=1):
-#     smoothie = SmoothingFunction().method2
-#     if ngram == 1:
-#         weight = (1, 0, 0, 0)
-#     elif ngram == 2:
-#         weight = (0.5, 0.5, 0, 0)
-#     elif ngram == 3:
-#         weight = (0.33, 0.33, 0.33, 0)
-#     elif ngram == 4:
-#         weight = (0.25, 0.25, 0.25, 0.25)
-#     return sentence_bleu(refer, candidate, 
-#                          weights=weight, 
-#                          smoothing_function=smoothie)
+def cal_BLEU_nltk(refer, candidate, ngram=1):
+    '''
+    SmoothingFunction refer to https://github.com/PaddlePaddle/models/blob/a72760dff8574fe2cb8b803e01b44624db3f3eff/PaddleNLP/Research/IJCAI2019-MMPMS/mmpms/utils/metrics.py
+    '''
+    smoothie = SmoothingFunction().method7
+    if ngram == 1:
+        weight = (1, 0, 0, 0)
+    elif ngram == 2:
+        weight = (0.5, 0.5, 0, 0)
+    elif ngram == 3:
+        weight = (0.33, 0.33, 0.33, 0)
+    elif ngram == 4:
+        weight = (0.25, 0.25, 0.25, 0.25)
+    return sentence_bleu(refer, candidate, 
+                         weights=weight, 
+                         smoothing_function=smoothie)
 
 # BLEU of nlg-eval
 def cal_BLEU(refs, tgts):
@@ -36,7 +39,7 @@ def cal_BLEU(refs, tgts):
     s = scorer.compute_score(refs, tgts)
     return s[0]
 
-
+# BLEU of multibleu.perl
 def cal_BLEU_perl(dataset, model):
     p = os.popen(f'python ./metric/perl-bleu.py {dataset} {model}').read()
     print(f'[!] multi-perl: {p}')

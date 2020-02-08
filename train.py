@@ -81,10 +81,10 @@ def train(train_iter, net, optimizer, vocab_size, pad,
 
         loss.backward()
         clip_grad_norm_(net.parameters(), grad_clip)
-        if transformer_decode:
-            optimizer.step_and_update_lr()
-        else:
-            optimizer.step()
+        # if transformer_decode:
+        #     optimizer.step_and_update_lr()
+        # else:
+        optimizer.step()
         total_loss += loss.item()
         batch_num += 1
 
@@ -198,18 +198,22 @@ def translate(data_iter, net, **kwargs):
                                           loss=True)
                 
             # true working ppl by using teach_force
-            if kwargs['transformer_decode'] == 0:
-                hold_teach = net.teach_force
-                net.teach_force = 1.0
-            if kwargs['graph'] == 1:
-                f_l = net(sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths)
-            elif kwargs['transformer_decode'] == 1:
-                f_l = net(sbatch, tbatch, src_key_padding_mask, tgt_key_padding_mask,
-                          memory_key_padding_mask)
-            else:
-                f_l = net(sbatch, tbatch, turn_lengths)
-            if kwargs['transformer_decode'] == 0:
-                net.teach_force = hold_teach
+            with torch.no_grad():
+                if kwargs['transformer_decode'] == 0:
+                    hold_teach = net.teach_force
+                    net.teach_force = 1.0
+                if kwargs['graph'] == 1:
+                    f_l = net(sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths)
+                elif kwargs['transformer_decode'] == 1:
+                    f_l = net(sbatch, tbatch, 
+                              src_key_padding_mask, 
+                              tgt_key_padding_mask,
+                              memory_key_padding_mask)
+                else:
+                    f_l = net(sbatch, tbatch, turn_lengths)
+                if kwargs['transformer_decode'] == 0:
+                    net.teach_force = hold_teach
+            # teach_force over
             
             if kwargs['transformer_decode']:
                 loss = criterion(f_l[:-1].view(-1, len(tgt_w2idx)),
@@ -303,6 +307,9 @@ def write_into_tb(pred_path, writer, writer_str, epoch, ppl, bleu_mode, model, d
         
     if bleu_mode == 'perl':
         bleu1_sum, bleu2_sum, bleu3_sum, bleu4_sum = cal_BLEU_perl(dataset, model)
+    # elif bleu_mode == 'nlg-eval':
+    # elif bleu_mode == 'nltk':
+        
 
     # Distinct-1, Distinct-2
     candidates, references = [], []
@@ -422,21 +429,21 @@ def main(**kwargs):
     print(f'[!] Parameters size: {sum(x.numel() for x in net.parameters())}')
 
     # prepare optimizer
-    if kwargs['transformer_decode']:
-        print(f'[!] Optimizer Adam with weight decay')
-        optimizer = ScheduledOptim(optim.Adam(net.parameters(), 
-                                              betas=(0.9, 0.98), eps=1e-9),
-                                   kwargs['d_model'], kwargs['warmup_step'])
-    else:
-        print(f'[!] Optimizer Adam')
-        optimizer = optim.Adam(net.parameters(), lr=kwargs['lr'])
-        scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 
-                                                   mode='min',
-                                                   factor=kwargs['lr_gamma'],
-                                                   patience=kwargs['patience'],
-                                                   verbose=True,
-                                                   cooldown=0,
-                                                   min_lr=kwargs['lr_mini'])
+    # if kwargs['transformer_decode']:
+    #     print(f'[!] Optimizer Adam with weight decay')
+    #     optimizer = ScheduledOptim(optim.Adam(net.parameters(), 
+    #                                           betas=(0.9, 0.98), eps=1e-9),
+    #                                kwargs['d_model'], kwargs['warmup_step'])
+    # else:
+    print(f'[!] Optimizer Adam')
+    optimizer = optim.Adam(net.parameters(), lr=kwargs['lr'])
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 
+                                               mode='min',
+                                               factor=kwargs['lr_gamma'],
+                                               patience=kwargs['patience'],
+                                               verbose=True,
+                                               cooldown=0,
+                                               min_lr=kwargs['lr_mini'])
     pbar = tqdm(range(1, kwargs['epochs'] + 1))
     training_loss, validation_loss = [], []
     min_loss = np.inf
@@ -541,7 +548,7 @@ def main(**kwargs):
         writer.add_scalar(f'{writer_str}-Loss/dev', val_loss, epoch)
         if kwargs['transformer_decode']:
             writer.add_scalar(f'{writer_str}-Loss/lr',
-                              optimizer._optimizer.state_dict()['param_groups'][0]['lr'],
+                              optimizer.state_dict()['param_groups'][0]['lr'],
                               epoch)
             writer.add_scalar(f'{writer_str}-Loss/teach', 1, epoch)
         else:
@@ -558,10 +565,10 @@ def main(**kwargs):
             patience += 1
                           
         # checkpoint state
-        if kwargs['transformer_decode']:
-            optim_state = optimizer._optimizer.state_dict()
-        else:
-            optim_state = optimizer.state_dict()
+        # if kwargs['transformer_decode']:
+        #     optim_state = optimizer._optimizer.state_dict()
+        # else:
+        optim_state = optimizer.state_dict()
         state = {'net': net.state_dict(), 'opt': optim_state, 
                  'epoch': epoch, 'patience': patience}
         torch.save(state, 
@@ -590,8 +597,8 @@ def main(**kwargs):
             net.teach_force = teacher_force_ratio
         
         # lr schedule change, monitor the evaluation loss
-        if kwargs['transformer_decode'] == 0:
-            scheduler.step(val_loss)
+        # if kwargs['transformer_decode'] == 0:
+        scheduler.step(val_loss)
         # else:
         #     scheduler.step()
         
