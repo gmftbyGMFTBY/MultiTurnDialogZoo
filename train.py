@@ -29,6 +29,7 @@ from model.WSeq import WSeq
 from model.DSHRED import DSHRED
 from model.MReCoSa import MReCoSa
 from model.MTGCN import MTGCN
+from model.MTGAT import MTGAT
 from model.GatedGCN import GatedGCN
 from model.layers import *
 
@@ -423,6 +424,15 @@ def main(**kwargs):
                     sos=tgt_w2idx['<sos>'], dropout=kwargs['dropout'],
                     utter_n_layer=kwargs['utter_n_layer'],
                     context_threshold=kwargs['context_threshold'])
+    elif kwargs['model'] == 'MTGAT':
+        net = MTGAT(len(src_w2idx), len(tgt_w2idx), kwargs['embed_size'], 
+                    kwargs['utter_hidden'], kwargs['context_hidden'],
+                    kwargs['decoder_hidden'], kwargs['position_embed_size'], 
+                    teach_force=kwargs['teach_force'], pad=tgt_w2idx['<pad>'], 
+                    sos=tgt_w2idx['<sos>'], dropout=kwargs['dropout'],
+                    utter_n_layer=kwargs['utter_n_layer'],
+                    context_threshold=kwargs['context_threshold'],
+                    heads=kwargs['gat_heads'])
     elif kwargs['model'] == 'GatedGCN':
         net = GatedGCN(len(src_w2idx), len(tgt_w2idx), kwargs['embed_size'], 
                     kwargs['utter_hidden'], kwargs['context_hidden'],
@@ -699,6 +709,7 @@ if __name__ == "__main__":
     parser.add_argument('--bleu', type=str, default='nltk', help='nltk or perl')
     parser.add_argument('--lr_mini', type=float, default=1e-6, help='minial lr (threshold)')
     parser.add_argument('--lr_gamma', type=float, default=0.8, help='lr schedule gamma factor')
+    parser.add_argument('--gat_heads', type=int, default=5, help='heads of GAT layer')
 
     args = parser.parse_args()
 

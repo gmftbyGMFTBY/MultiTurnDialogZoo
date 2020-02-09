@@ -39,12 +39,15 @@ elif [ $model = 'Transformer' ]; then
 elif [ $model = 'MTGCN' ]; then
     hierarchical=1
     graph=1
+elif [ $model = 'MTGAT' ]; then
+    hierarchical=1
+    graph=1
 elif [ $model = 'GatedGCN' ]; then
     hierarchical=1
     graph=1
 else
-    hierarchical=0
-    graph=0
+    echo "[!] Illegal model name $model"
+    exit
 fi
 
 
@@ -58,7 +61,7 @@ fi
 # maxlen and batch_size
 # for dailydialog dataset, 20 and 150 is the most appropriate settings
 if [ $hierarchical = 1 ]; then
-    maxlen=20
+    maxlen=50
     batch_size=128
 elif [ $transformer_decode = 1 ]; then
     maxlen=150
@@ -263,6 +266,7 @@ elif [ $mode = 'train' ]; then
         --lr_mini 1e-6 \
         --lr_gamma 0.5 \
         --warmup_step 4000 \
+        --gat_heads 5 \
 
 elif [ $mode = 'translate' ]; then
     rm ./processed/$dataset/$model/ppl.txt

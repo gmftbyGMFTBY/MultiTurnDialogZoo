@@ -19,7 +19,6 @@ from tqdm import tqdm
 from scipy.linalg import norm
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from transformers import BertTokenizer
-from model.layers import NoamOpt
 
 import nltk
 from nltk.util import bigrams
