@@ -18,6 +18,9 @@ fi
 if [ $model = 'HRED' ]; then
     hierarchical=1
     graph=0
+elif [ $model = 'HRAN' ]; then
+    hierarchical=1
+    graph=0
 elif [ $model = 'WSeq' ]; then
     hierarchical=1
     graph=0

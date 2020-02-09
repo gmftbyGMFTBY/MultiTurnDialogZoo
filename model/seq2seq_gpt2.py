@@ -34,7 +34,6 @@ class transformer_gpt2(nn.Module):
         inpt: [seq, batch]
         '''
         inpt = inpt.transpose(0, 1)    # [batch, seq]
-        ipdb.set_trace()
         opt = self.model.forward(input_ids=inpt)[0]    # [batch, seq, vocab]
         opt = F.log_softmax(opt, dim=-1)    # [batch, seq, vocab]
         return opt
