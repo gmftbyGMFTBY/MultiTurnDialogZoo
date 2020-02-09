@@ -31,6 +31,8 @@ Our motivation is to prove that explicit multi-round context modeling or explici
 12. perl (for running the multi-bleu.perl script)
 
 ## Dataset format
+Three multi-turn open-domain dialogue dataset (Dailydialog, DSTC7_AVSD, PersonaChat) can be obtained by this [link](https://github.com/PaddlePaddle/models/tree/75e463a22ef6cbd43f47917a62ee43d13a05831e/PaddleNLP/Research/Dialogue-PLATO)
+
 Each dataset contains 6 files
 * src-train.txt
 * tgt-train.txt
