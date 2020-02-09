@@ -15,8 +15,13 @@ from .layers import *
 
 
 '''
-HRAN model with hierarchical attention mechanism
+========== SLOW AND HIGH OCCUPIED ON GPU ==========
+HRAN: Hierarchical Recurrent Attention Network for Response Generation
+Compared with other models, HRAN is slow because of the word level attention mechanism. During decoding, every hidden state in the conversation context are saved, so the GPU overload is very high and speed is slow.
+
+Available batch_size for the HRAN is 64. Max lengths of each utterance is 20.
 '''
+
 
 class Utterance_encoder(nn.Module):
 
@@ -290,7 +295,7 @@ class HRAN(nn.Module):
 
             # context_output, hidden = self.context_encoder(turns)
             # hidden = hidden.unsqueeze(0)
-            hidden = torch.randn(self.n_layer, batch_size, self.hidden_size)
+            hidden = torch.randn(self.utter_n_layer, batch_size, self.hidden_size)
             if torch.cuda.is_available():
                 hidden = hidden.cuda()
 

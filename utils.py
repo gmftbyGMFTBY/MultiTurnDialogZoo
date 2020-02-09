@@ -222,7 +222,7 @@ def create_the_abs_graph(turns, weights=[1, 1], threshold=1, bidir=False, self_l
     turn_len = len(turns)
     num_e = 0
     for i in range(turn_len):
-        for j in range(turn_len):
+        for j in range(i+1, turn_len):
             if i == j:
                 if self_loop:
                     edges[(i, j)] = [s_w]
@@ -673,7 +673,7 @@ def analyse_dataset(dataset):
                 imax = max(imax, len(k.split()))
     print(f'[!] length of the sentenes(avg, max, min) for hierarchical: {round(i/icounter, 4)}/{imax}/{imin}')
     print(f'[!] length of the sentenes(avg, max, min) for no-hierarchical: {round(j/jcounter, 4)}/{jmax}/{jmin}')
-    print(f'[!] turn length: {round(turn/tcounter, 4)}')
+    print(f'[!] avg turn length: {round(turn/tcounter, 4)}')
                 
     
 # ========== function for transformers (GPT2) ==========

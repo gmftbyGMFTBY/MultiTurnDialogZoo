@@ -56,9 +56,9 @@ else
 fi
 
 # maxlen and batch_size
-# for dailydialog dataset, 50 and 200 is the most appropriate settings
+# for dailydialog dataset, 20 and 150 is the most appropriate settings
 if [ $hierarchical = 1 ]; then
-    maxlen=50
+    maxlen=20
     batch_size=128
 elif [ $transformer_decode = 1 ]; then
     maxlen=150
@@ -126,16 +126,19 @@ elif [ $mode = 'stat' ]; then
     echo "[!] analyze the graph coverage information"
     python utils.py \
          --mode stat \
+         --dataset $dataset \
          --graph ./processed/$dataset/$model/train-graph.pkl \
          --hops 3 
          
     python utils.py \
          --mode stat \
+         --dataset $dataset \
          --graph ./processed/$dataset/$model/test-graph.pkl \
          --hops 3
          
     python utils.py \
          --mode stat \
+         --dataset $dataset \
          --graph ./processed/$dataset/$model/dev-graph.pkl \
          --hops 3
         
