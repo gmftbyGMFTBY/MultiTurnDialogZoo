@@ -24,6 +24,7 @@ from metric.metric import *
 from model.seq2seq_attention import Seq2Seq
 from model.seq2seq_transformer import Transformer
 from model.HRED import HRED
+from model.VHRED import VHRED
 from model.HRAN import HRAN
 from model.WSeq import WSeq
 from model.DSHRED import DSHRED
@@ -35,7 +36,9 @@ from model.layers import *
 
 
 def train(train_iter, net, optimizer, vocab_size, pad, 
-          grad_clip=10, graph=False, debug=False, transformer_decode=False):
+          grad_clip=10, graph=False, debug=False, 
+          transformer_decode=False, kl_mult=0, 
+          kl_annealing_iter=20000):
     # choose nll_loss for training the objective function
     net.train()
     total_loss, batch_num = 0.0, 0
@@ -74,9 +77,16 @@ def train(train_iter, net, optimizer, vocab_size, pad,
             loss = criterion(output[:-1].view(-1, vocab_size),
                              tbatch[1:].contiguous().view(-1))
         else:
+            if type(output) == tuple:
+                # VHRED model, KL divergence add to the loss
+                output, kl_div = output
+            else:
+                kl_div = None
             loss = criterion(output[1:].view(-1, vocab_size),
                              tbatch[1:].contiguous().view(-1))
-
+            if kl_div:
+                loss += kl_mult * kl_div
+            
         # add train loss to the tensorfboard
         # writer.add_scalar(f'{writer_str}-Loss/train-{epoch}', loss, idx)
 
@@ -90,6 +100,9 @@ def train(train_iter, net, optimizer, vocab_size, pad,
         batch_num += 1
 
         pbar.set_description(f'batch {batch_num}, training loss: {round(loss.item(), 4)}')
+        
+        # VHRED
+        kl_mult = min(kl_mult + 1.0 / kl_annealing_iter, 1.0)
 
         if debug:
             # show the output result, output: [length, batch, vocab_size]
@@ -98,7 +111,7 @@ def train(train_iter, net, optimizer, vocab_size, pad,
             word_idx = utterance.data.max(1)[1]       # [length]
 
     # return avg loss
-    return round(total_loss / batch_num, 4)
+    return round(total_loss / batch_num, 4), kl_mult
 
 
 def validation(data_iter, net, vocab_size, pad, 
@@ -136,8 +149,16 @@ def validation(data_iter, net, vocab_size, pad,
             loss = criterion(output[:-1].view(-1, vocab_size),
                              tbatch[1:].contiguous().view(-1))
         else:
+            if type(output) == tuple:
+                # VHRED model, KL divergence add to the loss
+                output, kl_div = output
+            else:
+                kl_div = None
             loss = criterion(output[1:].view(-1, vocab_size),
                              tbatch[1:].contiguous().view(-1))
+            if kl_div:
+                loss += kl_mult * kl_div
+                
         total_loss += loss.item()
         batch_num += 1
         
@@ -372,6 +393,15 @@ def main(**kwargs):
                    utter_n_layer=kwargs['utter_n_layer'], 
                    dropout=kwargs['dropout'],
                    pretrained=pretrained)
+    elif kwargs['model'] == 'VHRED':
+        net = VHRED(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
+                    kwargs['utter_hidden'], kwargs['context_hidden'],
+                    kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                    pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                    utter_n_layer=kwargs['utter_n_layer'], 
+                    dropout=kwargs['dropout'],
+                    z_hidden=kwargs['z_hidden'],
+                    pretrained=pretrained)
     elif kwargs['model'] == 'HRAN':
         net = HRAN(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
                    kwargs['utter_hidden'], kwargs['context_hidden'],
@@ -477,6 +507,7 @@ def main(**kwargs):
     teacher_force_ratio_counter = kwargs['dynamic_tfr_counter']
     # holder = teacher_force_ratio_counter
     holder = 0
+    kl_mult = 0.0    # VHRED only
 
     # train
     for epoch in pbar:
@@ -561,7 +592,11 @@ def main(**kwargs):
                            tgt_w2idx['<pad>'], 
                            grad_clip=kwargs['grad_clip'], debug=kwargs['debug'],
                            transformer_decode=kwargs['transformer_decode'],
-                           graph=kwargs['graph']==1)
+                           graph=kwargs['graph']==1, kl_mult=kl_mult, 
+                           kl_annealing_iter=kwargs['kl_annealing_iter'])
+        if type(train_loss) == tuple:
+            # VHRED
+            train_loss, kl_mult = train_loss
         val_loss = validation(dev_iter, net, len(tgt_w2idx), tgt_w2idx['<pad>'],
                               transformer_decode=kwargs['transformer_decode'],
                               graph=kwargs['graph']==1)
@@ -710,6 +745,8 @@ if __name__ == "__main__":
     parser.add_argument('--lr_mini', type=float, default=1e-6, help='minial lr (threshold)')
     parser.add_argument('--lr_gamma', type=float, default=0.8, help='lr schedule gamma factor')
     parser.add_argument('--gat_heads', type=int, default=5, help='heads of GAT layer')
+    parser.add_argument('--z_hidden', type=int, default=100, help='z_hidden for VHRED')
+    parser.add_argument('--kl_annealing_iter', type=int, default=20000, help='KL annealing for VHRED')
 
     args = parser.parse_args()
 
