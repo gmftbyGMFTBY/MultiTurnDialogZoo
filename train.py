@@ -151,13 +151,9 @@ def validation(data_iter, net, vocab_size, pad,
         else:
             if type(output) == tuple:
                 # VHRED model, KL divergence add to the loss
-                output, kl_div = output
-            else:
-                kl_div = None
+                output, _ = output
             loss = criterion(output[1:].view(-1, vocab_size),
                              tbatch[1:].contiguous().view(-1))
-            if kl_div:
-                loss += kl_mult * kl_div
                 
         total_loss += loss.item()
         batch_num += 1
@@ -234,6 +230,8 @@ def translate(data_iter, net, **kwargs):
                               memory_key_padding_mask)
                 else:
                     f_l = net(sbatch, tbatch, turn_lengths)
+                    if type(f_l) == tuple:
+                        f_l, _ = f_l
                 if kwargs['transformer_decode'] == 0:
                     net.teach_force = hold_teach
             # teach_force over
@@ -536,15 +534,24 @@ def main(**kwargs):
                                                 kwargs['batch_size'], 
                                                 kwargs['maxlen'])
             else:
-                train_iter = get_batch_data(kwargs['src_train'], kwargs['tgt_train'],
-                                            kwargs['src_vocab'], kwargs['tgt_vocab'], 
-                                            kwargs['batch_size'], kwargs['maxlen'])
-                test_iter = get_batch_data(kwargs['src_test'], kwargs['tgt_test'],
-                                           kwargs['src_vocab'], kwargs['tgt_vocab'],
-                                           kwargs['batch_size'], kwargs['maxlen'])
-                dev_iter = get_batch_data(kwargs['src_dev'], kwargs['tgt_dev'],
-                                          kwargs['src_vocab'], kwargs['tgt_vocab'],
-                                          kwargs['batch_size'], kwargs['maxlen'])
+                train_iter = get_batch_data(kwargs['src_train'], 
+                                            kwargs['tgt_train'],
+                                            kwargs['src_vocab'], 
+                                            kwargs['tgt_vocab'], 
+                                            kwargs['batch_size'], 
+                                            kwargs['maxlen'])
+                test_iter = get_batch_data(kwargs['src_test'], 
+                                           kwargs['tgt_test'],
+                                           kwargs['src_vocab'], 
+                                           kwargs['tgt_vocab'],
+                                           kwargs['batch_size'],
+                                           kwargs['maxlen'])
+                dev_iter = get_batch_data(kwargs['src_dev'], 
+                                          kwargs['tgt_dev'],
+                                          kwargs['src_vocab'], 
+                                          kwargs['tgt_vocab'],
+                                          kwargs['batch_size'],
+                                          kwargs['maxlen'])
         else:
             if kwargs['transformer_decode'] == 0:
                 train_iter = get_batch_data_flatten(kwargs['src_train'],

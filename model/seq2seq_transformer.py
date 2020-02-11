@@ -45,7 +45,6 @@ class Transformer(nn.Module):
                                     dim_feedforward, 
                                     dropout)
         self.fc = nn.Linear(d_model, opt_vocab_size)
-        self.norm = nn.LayerNorm(d_model)
         self.init_weight()
         
     def init_weight(self):
@@ -77,7 +76,6 @@ class Transformer(nn.Module):
                             tgt_key_padding_mask=tgt_key_padding_mask, 
                             memory_key_padding_mask=memory_key_padding_mask)
         # [seq, batch, vocab_size]
-        output = self.norm(output)
         return F.log_softmax(self.fc(output), dim=-1)
     
     def predict(self, src, 

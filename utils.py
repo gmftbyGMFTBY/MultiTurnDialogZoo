@@ -219,33 +219,30 @@ def create_the_abs_graph(turns, weights=[1, 1], threshold=1, bidir=False, self_l
     edges = {}
     s_w, u_w = weights
     turn_len = len(turns)
-    num_e = 0
     for i in range(turn_len):
         for j in range(i+1, turn_len):
-            if i == j:
-                if self_loop:
-                    edges[(i, j)] = [s_w]
-                    num_e += 1
-            else:
-                edges[(i, j)] = [s_w]
-                num_e += 1
+            edges[(i, j)] = [s_w]
                 
     # clean the edges
     e, w = [[], []], []
+    whole_num = 0
     for src, tgt in edges.keys():
         e[0].append(src)
         e[1].append(tgt)
         w.append(max(edges[(src, tgt)]))
+        whole_num += 1
         
         if bidir and src != tgt:
             e[0].append(tgt)
             e[1].append(src)
             w.append(max(edges[(src, tgt)]))
+            whole_num += 1
             
-    return (e, w), num_e
+    #  print(f'[!] whole edges number: {whole_num}')
+    return (e, w), whole_num
     
     
-def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.4, bidir=False):
+def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
     '''create the weighted directed graph of one conversation
     sequenutial edge, user connected edge, [BERT/PMI] edge
     param: turns: [turns(user, utterance)]
@@ -324,17 +321,21 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.4, bidir=False):
 
     # clean the edges
     e, w = [[], []], []
+    whole_num = 0
     for src, tgt in edges.keys():
         e[0].append(src)
         e[1].append(tgt)
         w.append(max(edges[(src, tgt)]))
+        whole_num += 1
         
         if bidir and src != tgt:
             e[0].append(tgt)
             e[1].append(src)
             w.append(max(edges[(src, tgt)]))
-
-    return (e, w), se, ue, pe
+            whole_num += 1
+            
+    # print(f'[!] whole number edges is {whole_num}')
+    return (e, w), whole_num
 
 
 def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
@@ -389,7 +390,7 @@ def generate_graph(dialogs, path, fully=False, threshold=0.75,
     # return: [datasize, (2, num_edges)/ (num_edges)]
     # **make sure the bert-as-service is running**
     edges = []
-    sum_e = 0
+    sum_num = 0
     if lang == 'en':
         wbpath = '/home/lt/data/File/wordembedding/glove/glove.6B.300d.txt'
     elif lang == 'zh':
@@ -406,19 +407,18 @@ def generate_graph(dialogs, path, fully=False, threshold=0.75,
             edge, num_e = create_the_abs_graph(dialog, weights=[1, 1],
                                                threshold=threshold, 
                                                bidir=bidir, self_loop=self_loop)
-            sum_e += num_e
         else:
-            edge, ses, ueu, pep = create_the_graph(dialog, vocab, 
-                                                   threshold=threshold,
-                                                   bidir=bidir)
-            sum_e += ses + ueu + pep
+            edge, num_e = create_the_graph(dialog, vocab, 
+                                           threshold=threshold,
+                                           bidir=bidir)
+        sum_num += num_e
         edges.append(edge)
 
     with open(path, 'wb') as f:
         pickle.dump(edges, f)
 
+    print(f'[!] avg edges number is {round(sum_num / len(dialogs), 4)}')
     print(f'[!] graph information is converted in {path}')
-    print(f'[!] Avg number of edges: {round(sum_e / len(dialogs), 4)}')
 
 
 def idx2sent(data, vocab):

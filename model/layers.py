@@ -188,7 +188,6 @@ class PositionEmbedding(nn.Module):
         pe = pe.unsqueeze(0).transpose(0, 1)
         self.register_buffer('pe', pe)   # not the parameters of the Module
 
-
     def forward(self, x):
         x = x + self.pe[:x.size(0), :]
         return self.dropout(x)

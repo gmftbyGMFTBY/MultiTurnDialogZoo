@@ -50,7 +50,8 @@ elif [ $model = 'GatedGCN' ]; then
     graph=1
 else
     echo "[!] Illegal model name $model"
-    exit
+    hierarchical=0
+    graph=0
 fi
 
 
@@ -127,6 +128,13 @@ elif [ $mode = 'vocab' ]; then
         --vocab ./processed/$dataset/optvocab.pkl \
         --file ./data/$dataset/tgt-train.txt
         
+    # generate the whole vocab for VHRED
+    python utils.py \
+        --mode vocab \
+        --cutoff 20000 \
+        --vocab ./processed/$dataset/vocab.pkl \
+        --file ./data/$dataset/tgt-train.txt ./data/$dataset/src-train.txt
+        
 elif [ $mode = 'stat' ]; then
     # analyse the graph information in the dataset
     echo "[!] analyze the graph coverage information"
@@ -157,11 +165,11 @@ elif [ $mode = 'graph' ]; then
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
         --graph ./processed/$dataset/train-graph.pkl \
-        --threshold 0.4 \
+        --threshold 0.8 \
         --maxlen $maxlen \
         --no-bidir \
         --lang $3 \
-        --fully \
+        --no-fully \
         --no-self-loop \
     
     python utils.py \
@@ -171,11 +179,11 @@ elif [ $mode = 'graph' ]; then
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
         --graph ./processed/$dataset/test-graph.pkl \
-        --threshold 0.4 \
+        --threshold 0.8 \
         --maxlen $maxlen \
         --no-bidir \
         --lang $3 \
-        --fully \
+        --no-fully \
         --no-self-loop \
 
     python utils.py \
@@ -185,11 +193,11 @@ elif [ $mode = 'graph' ]; then
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
         --graph ./processed/$dataset/dev-graph.pkl \
-        --threshold 0.4 \
+        --threshold 0.8 \
         --maxlen $maxlen \
         --no-bidir \
         --lang $3 \
-        --fully \
+        --no-fully \
         --no-self-loop \
         
 elif [ $mode = 'train' ]; then
@@ -202,7 +210,7 @@ elif [ $mode = 'train' ]; then
     else
         echo "[!] ./processed/$dataset/$model: already exists"
     fi
-    if [ ! -f "./processed/$dataset/$model/ppl.txt" ];then
+    if [ ! -f "./processed/$dataset/$model/ppl.txt" ]; then
         echo "[!] ./processed/$dataset/$model/ppl.txt doesn't exist"
     else
         rm ./processed/$dataset/$model/ppl.txt
@@ -210,6 +218,23 @@ elif [ $mode = 'train' ]; then
     
     cp -r tblogs/$dataset/ ./bak/tblogs
     rm tblogs/$dataset/$model/*
+    
+    # Because of the posterior, the VHRED need to bind the src and tgt vocabulary
+    if [ $model = 'VHRED' ]; then
+        src_vocab="./processed/$dataset/vocab.pkl"
+        tgt_vocab="./processed/$dataset/vocab.pkl"
+    else
+        src_vocab="./processed/$dataset/iptvocab.pkl"
+        tgt_vocab="./processed/$dataset/optvocab.pkl"
+    fi
+    
+    # dropout for transformer
+    if [ $model = 'Transformer' ]; then
+        # other repo set the 0.1 as the dropout ratio, remain it
+        dropout=0.1
+    else
+        dropout=0.3
+    fi
     
     echo "[!] back up finished"
     
@@ -225,8 +250,8 @@ elif [ $mode = 'train' ]; then
         --tgt_test ./data/$dataset/tgt-test.txt \
         --src_dev ./data/$dataset/src-dev.txt \
         --tgt_dev ./data/$dataset/tgt-dev.txt \
-        --src_vocab ./processed/$dataset/iptvocab.pkl \
-        --tgt_vocab ./processed/$dataset/optvocab.pkl \
+        --src_vocab $src_vocab \
+        --tgt_vocab $tgt_vocab \
         --train_graph ./processed/$dataset/train-graph.pkl \
         --test_graph ./processed/$dataset/test-graph.pkl \
         --dev_graph ./processed/$dataset/dev-graph.pkl \
@@ -247,11 +272,11 @@ elif [ $mode = 'train' ]; then
         --patience 5 \
         --dataset $dataset \
         --grad_clip 3.0 \
-        --dropout 0.3 \
+        --dropout $dropout \
         --d_model 512 \
-        --nhead 8 \
-        --num_encoder_layers 6 \
-        --num_decoder_layers 6 \
+        --nhead 16 \
+        --num_encoder_layers 8 \
+        --num_decoder_layers 8 \
         --dim_feedforward 2048 \
         --hierarchical $hierarchical \
         --transformer_decode $transformer_decode \

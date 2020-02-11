@@ -16,6 +16,9 @@ from .layers import *
 
 '''
 Refer to: https://github.com/lipiji/dialogue-hred-vhred
+Only VHRED need to bind the encoder and decoder embeeding layer
+
+NOTE: Performance should be better than HRED
 '''
 
 
@@ -33,7 +36,7 @@ class Utterance_encoder(nn.Module):
         self.input_size = input_size
         self.n_layer = n_layer
 
-        self.embed = nn.Embedding(input_size, self.embedding_size)
+        # self.embed = nn.Embedding(input_size, self.embedding_size)
         self.gru = nn.GRU(self.embedding_size, self.hidden_size, num_layers=n_layer, 
                           dropout=(0 if n_layer == 1 else dropout), bidirectional=True)
         # hidden_project
@@ -52,7 +55,7 @@ class Utterance_encoder(nn.Module):
     def forward(self, inpt, lengths, hidden=None):
         # use pack_padded
         # inpt: [seq_len, batch], lengths: [batch_size]
-        embedded = self.embed(inpt)    # [seq_len, batch, input_size]
+        # embedded = self.embed(inpt)    # [seq_len, batch, input_size]
 
         if not hidden:
             hidden = torch.randn(self.n_layer * 2, len(lengths), 
@@ -60,7 +63,7 @@ class Utterance_encoder(nn.Module):
             if torch.cuda.is_available():
                 hidden = hidden.cuda()
 
-        embedded = nn.utils.rnn.pack_padded_sequence(embedded, lengths,
+        embedded = nn.utils.rnn.pack_padded_sequence(inpt, lengths,
                                                      enforce_sorted=False)
         _, hidden = self.gru(embedded, hidden)    
         # [n_layer * bidirection, batch, hidden_size]
@@ -131,10 +134,13 @@ class VariableLayer(nn.Module):
         self.prior_mu = nn.Linear(context_hidden, z_hidden)
         self.prior_var = nn.Linear(context_hidden, z_hidden)
 
-        self.posterior_h = nn.ModuleList([nn.Linear(context_hidden+encoder_hidden, context_hidden), 
-                                          nn.Linear(context_hidden, context_hidden)])
+        self.posterior_h = nn.ModuleList([nn.Linear(context_hidden+encoder_hidden,
+                                                    context_hidden), 
+                                          nn.Linear(context_hidden, 
+                                                    context_hidden)])
         self.posterior_mu = nn.Linear(context_hidden, z_hidden)
         self.posterior_var = nn.Linear(context_hidden, z_hidden)
+        self.softplus = nn.Softplus()
         
     def prior(self, context_outputs):
         # context_outputs: [batch, context_hidden]
@@ -155,7 +161,7 @@ class VariableLayer(nn.Module):
         var_posterior = self.softplus(self.posterior_var(h_posterior))
         return mu_posterior, var_posterior
     
-    def kl_div(self, mu_1, var_1, mu_2, var_2):
+    def kl_div(self, mu1, var1, mu2, var2):
         one = torch.FloatTensor([1.0])
         if torch.cuda.is_available():
             one = one.cuda()
@@ -169,7 +175,7 @@ class VariableLayer(nn.Module):
         # Return: z_sent [batch, z_hidden]
         # Return: kl_div, scalar for calculating the loss
         mu_prior, var_prior = self.prior(context_outputs)
-        eps = torch.randn((num_sentences, self.z_hidden))
+        eps = torch.randn((context_outputs.shape[0], self.z_hidden))
         if torch.cuda.is_available():
             eps = eps.cuda()
             
@@ -201,7 +207,7 @@ class Decoder(nn.Module):
         self.output_size = output_size
         self.hidden_size = hidden_size
         self.embed_size = embed_size
-        self.embed = nn.Embedding(self.output_size, self.embed_size)
+        # self.embed = nn.Embedding(self.output_size, self.embed_size)
         self.gru = nn.GRU(self.embed_size + self.hidden_size, self.hidden_size,
                           num_layers=n_layer, 
                           dropout=(0 if n_layer == 1 else dropout))
@@ -221,7 +227,7 @@ class Decoder(nn.Module):
     def forward(self, inpt, last_hidden, encoder_outputs):
         # inpt: [batch_size], last_hidden: [2, batch, hidden_size]
         # encoder_outputs: [turn_len, batch, hidden_size]
-        embedded = self.embed(inpt).unsqueeze(0)    # [1, batch_size, embed_size]
+        embedded = inpt.unsqueeze(0)    # [1, batch_size, embed_size]
         key = last_hidden.sum(axis=0)    # [batch, hidden_size]
 
         # [batch, 1, seq_len]
@@ -244,6 +250,10 @@ class Decoder(nn.Module):
     
 class VHRED(nn.Module):
     
+    '''
+    Source and Target vocabulary is the same
+    '''
+    
     def __init__(self, embed_size, input_size, output_size, 
                  utter_hidden, context_hidden, decoder_hidden, 
                  teach_force=0.5, pad=24745, sos=24742, dropout=0.5,
@@ -251,7 +261,8 @@ class VHRED(nn.Module):
                  pretrained=None):
         super(VHRED, self).__init__()
         self.teach_force = teach_force
-        self.output_size = output_size
+        assert input_size == output_size, 'The src and tgt vocab size must be the same'
+        self.vocab_size = input_size
         self.pad, self.sos = pad, sos
         self.utter_encoder = Utterance_encoder(input_size, 
                                                embed_size, 
@@ -266,12 +277,13 @@ class VHRED(nn.Module):
                                pretrained=pretrained)
         self.variablelayer = VariableLayer(context_hidden, utter_hidden, z_hidden)
         self.context2decoder = nn.Linear(context_hidden+z_hidden, context_hidden)
+        self.embedding = nn.Embedding(self.vocab_size, embed_size)
         
     def forward(self, src, tgt, lengths):
         # src: [turns, lengths, batch], tgt: [lengths, batch]
         # lengths: [turns, batch]
         turn_size, batch_size, maxlen = len(src), tgt.size(1), tgt.size(0)
-        outputs = torch.zeros(maxlen, batch_size, self.output_size)
+        outputs = torch.zeros(maxlen, batch_size, self.vocab_size)
         if torch.cuda.is_available():
             outputs = outputs.cuda()
 
@@ -280,7 +292,8 @@ class VHRED(nn.Module):
         for i in range(turn_size):
             # sbatch = src[i].transpose(0, 1)    # [seq_len, batch]
             # [4, batch, hidden]
-            hidden = self.utter_encoder(src[i], lengths[i])    # utter_hidden
+            inpt_ = self.embedding(src[i])
+            hidden = self.utter_encoder(inpt_, lengths[i])    # utter_hidden
             turns.append(hidden)
         turns = torch.stack(turns)    # [turn_len, batch, utter_hidden]
         
@@ -298,8 +311,8 @@ class VHRED(nn.Module):
         if torch.cuda.is_available():
             tgt_lengths = tgt_lengths.cuda()
         # [batch, utter_hidden]
-        ipdb.set_trace()
-        tgt_encoder_hidden = self.utter_encoder(tgt, tgt_lengths)
+        tgt_ = self.embedding(tgt)
+        tgt_encoder_hidden = self.utter_encoder(tgt_, tgt_lengths)
 
         # context encoding
         # output: [seq, batch, hidden], [2, batch, hidden]
@@ -322,11 +335,13 @@ class VHRED(nn.Module):
         use_teacher = random.random() < self.teach_force
         if use_teacher:
             for t in range(1, maxlen):
+                output = self.embedding(output)
                 output, hidden = self.decoder(output, hidden, context_output)
                 outputs[t] = output
                 output = tgt[t]
         else:
             for t in range(1, maxlen):
+                output = self.embedding(output)
                 output, hidden = self.decoder(output, hidden, context_output)
                 outputs[t] = output
                 # output = torch.max(output, 1)[1]
@@ -339,7 +354,7 @@ class VHRED(nn.Module):
         with torch.no_grad():
             turn_size, batch_size = len(src), src[0].size(1)
             outputs = torch.zeros(maxlen, batch_size)
-            floss = torch.zeros(maxlen, batch_size, self.output_size)
+            floss = torch.zeros(maxlen, batch_size, self.vocab_size)
             if torch.cuda.is_available():
                 outputs = outputs.cuda()
                 floss = floss.cuda()
@@ -347,7 +362,8 @@ class VHRED(nn.Module):
             turns = []
             for i in range(turn_size):
                 # sbatch = src[i].transpose(0, 1)
-                hidden = self.utter_encoder(src[i], lengths[i])
+                inpt_ = self.embedding(src[i])
+                hidden = self.utter_encoder(inpt_, lengths[i])
                 turns.append(hidden)
             turns = torch.stack(turns)
 
@@ -368,6 +384,7 @@ class VHRED(nn.Module):
                 output = output.cuda()
 
             for i in range(1, maxlen):
+                output = self.embedding(output)
                 output, hidden = self.decoder(output, hidden, context_output)
                 floss[i] = output
                 output = output.max(1)[1]
