@@ -109,7 +109,6 @@ class Transformer(nn.Module):
                                  memory_key_padding_mask=memory_key_padding_mask,
                                  tgt_key_padding_mask=None,
                                  tgt_mask=tgt_mask)
-                tgt = self.norm(tgt)
                 tgt = F.log_softmax(self.fc(tgt[-1]), dim=-1)    # [batch, vocab_size]
                 floss[t] = tgt
                 tgt = tgt.topk(1)[1].squeeze()    # [batch]

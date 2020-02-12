@@ -247,7 +247,12 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
     sequenutial edge, user connected edge, [BERT/PMI] edge
     param: turns: [turns(user, utterance)]
     param: weights: [sequential_w, user_w]
-    output: [2, num_edges], [num_edges]'''
+    output: [2, num_edges], [num_edges]
+    
+    For dataset DSTC7, sequential edges, last_utterence edges, correlation edges (threshold=0.6)
+    
+    For dataset Dailydialog, sequential edges, user edges, last utterence edges
+    '''
     edges = {}
     s_w, u_w = weights
     # sequential edges, (turn_len - 1)
@@ -257,6 +262,7 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
         edges[(i, i + 1)] = [s_w]
         se += 1
         
+    '''
     # user edge
     for i in range(turn_len):
         for j in range(turn_len):
@@ -265,17 +271,30 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
                     useri = 'user0'
                 elif 'user1' in turns[i]:
                     useri = 'user1'
+                else:
+                    ipdb.set_trace()
                 if 'user0' in turns[j]:
                     userj = 'user0'
                 elif 'user1' in turns[j]:
                     userj = 'user1'
+                else:
+                    ipdb.set_trace()
                 if useri == userj:
                     if edges.get((i, j), None):
                         edges[(i, j)].append(u_w)
                     else:
                         edges[(i, j)] = [u_w]
                     ue += 1
-    
+    '''
+                    
+    # all for the last query
+    query = turn_len-1
+    for i in range(turn_len):
+        if edges.get((i, query), None):
+            edges[(i, query)].append(u_w)
+        else:
+            edges[(i, query)] = [u_w]
+            
     # distance
     utterances = []
     for utterance in turns:
@@ -306,11 +325,11 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
                 # cosine + tfidf 
                 cosine_tf_idf = cosine_similarity_tfidf(utter1, utter2)
                 # glove embedding
-                utter1 = sent2glove(vocab, utterances[i])
-                utter2 = sent2glove(vocab, utterances[j])
-                glove = cos_similarity(utter1, utter2)
+                # utter1 = sent2glove(vocab, utterances[i])
+                # utter2 = sent2glove(vocab, utterances[j])
+                # glove = cos_similarity(utter1, utter2)
                 
-                weight = max([jaccard, cosine_tf, cosine_tf_idf, glove])
+                weight = max([jaccard, cosine_tf, cosine_tf_idf])
                 
                 if weight >= threshold:
                     if edges.get((i, j), None):
@@ -360,7 +379,7 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
                 utterance = utterance.replace(user_c, user_cr).strip()
                 line = [src_w2idx['<sos>']] + [src_w2idx.get(w, src_w2idx['<unk>']) for w in nltk.word_tokenize(utterance)] + [src_w2idx['<eos>']]
                 if len(line) > maxlen:
-                    line = [src_w2idx['<sos>']] + line[-maxlen:]
+                    line = [src_w2idx['<sos>'], line[1]] + line[-maxlen:]
                 turn.append(line)
                 srcu.append(user_vocab.index(user_cr))
             src_dataset.append(turn)
