@@ -249,9 +249,13 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
     param: weights: [sequential_w, user_w]
     output: [2, num_edges], [num_edges]
     
-    For dataset DSTC7, sequential edges, last_utterence edges, correlation edges (threshold=0.6)
+    For dataset DSTC7, [sequential edges, last_utterence edges, correlation edges (threshold=0.6)]
     
-    For dataset Dailydialog, sequential edges, user edges, last utterence edges
+    For dataset Dailydialog, [sequential edges, user edges, last utterence edges]
+    
+    For personachat dataset, [sequential edges, last utterence edges, correlation edges (threshold=0.6)]
+    
+    For ubuntu dataset, [seqential edges, user edges, last utterance edges, correlation edges (threshold=0.6)]
     '''
     edges = {}
     s_w, u_w = weights
@@ -262,7 +266,6 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
         edges[(i, i + 1)] = [s_w]
         se += 1
         
-    '''
     # user edge
     for i in range(turn_len):
         for j in range(turn_len):
@@ -285,7 +288,6 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
                     else:
                         edges[(i, j)] = [u_w]
                     ue += 1
-    '''
                     
     # all for the last query
     query = turn_len-1

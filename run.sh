@@ -66,7 +66,7 @@ fi
 # for dailydialog dataset, 20 and 150 is the most appropriate settings
 if [ $hierarchical = 1 ]; then
     maxlen=50
-    batch_size=64
+    batch_size=100
 elif [ $transformer_decode = 1 ]; then
     maxlen=150
     batch_size=48
@@ -118,20 +118,20 @@ elif [ $mode = 'vocab' ]; then
     echo "[!] Begin to generate the vocab"
     python utils.py \
         --mode vocab \
-        --cutoff 20000 \
+        --cutoff 50000 \
         --vocab ./processed/$dataset/iptvocab.pkl \
         --file ./data/$dataset/src-train.txt
 
     python utils.py \
         --mode vocab \
-        --cutoff 20000 \
+        --cutoff 50000 \
         --vocab ./processed/$dataset/optvocab.pkl \
         --file ./data/$dataset/tgt-train.txt
         
     # generate the whole vocab for VHRED
     python utils.py \
         --mode vocab \
-        --cutoff 20000 \
+        --cutoff 50000 \
         --vocab ./processed/$dataset/vocab.pkl \
         --file ./data/$dataset/tgt-train.txt ./data/$dataset/src-train.txt
         

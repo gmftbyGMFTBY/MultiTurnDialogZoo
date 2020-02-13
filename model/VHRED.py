@@ -169,7 +169,6 @@ class VariableLayer(nn.Module):
                             + (var1 + (mu1 - mu2).pow(2)) / var2 - one), 1)
         return kl_div
         
-        
     def forward(self, context_outputs, encoder_hidden=None, train=True):
         # context_outputs: [batch, context_hidden]
         # Return: z_sent [batch, z_hidden]
@@ -183,7 +182,8 @@ class VariableLayer(nn.Module):
             mu_posterior, var_posterior = self.posterior(context_outputs, 
                                                          encoder_hidden)
             z_sent = mu_posterior + torch.sqrt(var_posterior) * eps
-            kl_div = self.kl_div(mu_posterior, var_posterior, mu_prior, var_prior)
+            kl_div = self.kl_div(mu_posterior, var_posterior, 
+                                 mu_prior, var_prior)
             kl_div = torch.sum(kl_div)
         else:
             z_sent = mu_prior + torch.sqrt(var_prior) * eps
@@ -312,7 +312,8 @@ class VHRED(nn.Module):
             tgt_lengths = tgt_lengths.cuda()
         # [batch, utter_hidden]
         tgt_ = self.embedding(tgt)
-        tgt_encoder_hidden = self.utter_encoder(tgt_, tgt_lengths)
+        with torch.no_grad():    # NOTE
+            tgt_encoder_hidden = self.utter_encoder(tgt_, tgt_lengths)
 
         # context encoding
         # output: [seq, batch, hidden], [2, batch, hidden]
