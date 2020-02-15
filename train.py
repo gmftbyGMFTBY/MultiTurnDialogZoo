@@ -25,6 +25,7 @@ from model.seq2seq_attention import Seq2Seq
 from model.seq2seq_transformer import Transformer
 from model.HRED import HRED
 from model.VHRED import VHRED
+from model.KgCVAE import KgCVAE
 from model.HRAN import HRAN
 from model.WSeq import WSeq
 from model.DSHRED import DSHRED
@@ -79,13 +80,20 @@ def train(train_iter, net, optimizer, vocab_size, pad,
         else:
             if type(output) == tuple:
                 # VHRED model, KL divergence add to the loss
-                output, kl_div = output
+                if len(output) == 2:
+                    output, kl_div = output
+                elif len(output) == 3:
+                    output, kl_div, bow_loss = output
+                else:
+                    raise Exception('[!] wrong')
             else:
-                kl_div = None
+                kl_div, bow_loss = None, None
             loss = criterion(output[1:].view(-1, vocab_size),
                              tbatch[1:].contiguous().view(-1))
             if kl_div:
                 loss += kl_mult * kl_div
+            if bow_loss:
+                loss += bow_loss
             
         # add train loss to the tensorfboard
         # writer.add_scalar(f'{writer_str}-Loss/train-{epoch}', loss, idx)
@@ -151,7 +159,12 @@ def validation(data_iter, net, vocab_size, pad,
         else:
             if type(output) == tuple:
                 # VHRED model, KL divergence add to the loss
-                output, _ = output
+                if len(output) == 2:
+                    output, _ = output
+                elif len(output) == 3:
+                    output, _, _ = output
+                else:
+                    raise Exception('[!] wrong')
             loss = criterion(output[1:].view(-1, vocab_size),
                              tbatch[1:].contiguous().view(-1))
                 
@@ -231,7 +244,7 @@ def translate(data_iter, net, **kwargs):
                 else:
                     f_l = net(sbatch, tbatch, turn_lengths)
                     if type(f_l) == tuple:
-                        f_l, _ = f_l
+                        f_l = f_l[0]
                 if kwargs['transformer_decode'] == 0:
                     net.teach_force = hold_teach
             # teach_force over
@@ -396,6 +409,16 @@ def main(**kwargs):
                     kwargs['utter_hidden'], kwargs['context_hidden'],
                     kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
                     pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                    utter_n_layer=kwargs['utter_n_layer'], 
+                    dropout=kwargs['dropout'],
+                    z_hidden=kwargs['z_hidden'],
+                    pretrained=pretrained)
+    elif kwargs['model'] == 'KgCVAE':
+        net = KgCVAE(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
+                    kwargs['utter_hidden'], kwargs['context_hidden'],
+                    kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                    pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'],
+                    eos=tgt_w2idx['<eos>'], unk=tgt_w2idx['<unk>'],
                     utter_n_layer=kwargs['utter_n_layer'], 
                     dropout=kwargs['dropout'],
                     z_hidden=kwargs['z_hidden'],

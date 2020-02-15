@@ -16,6 +16,7 @@ from torch_geometric.nn import MessagePassing
 import math
 import random
 import numpy as np
+from collections import Counter
 import pickle
 import ipdb
 
@@ -349,6 +350,39 @@ def gen_nopeek_mask(length):
         mask = mask.cuda()
 
     return mask
+
+
+# ========= BOS Loss ========== #
+def to_bow(sentence, vocab_size, pad, sos, eos, unk):
+    '''  Convert a sentence into a bag of words representation
+    Args
+        - sentence: a list of token ids
+        - vocab_size: V
+    Returns
+        - bow: a integer vector of size V, numpy ndarray
+    '''
+    sentence = sentence.cpu().numpy()
+    bow = Counter(sentence)
+    # Remove special tokens
+    bow[pad], bow[eos], bow[sos], bow[unk] = 0, 0, 0, 0
+    x = np.zeros(vocab_size, dtype=np.int64)
+    x[list(bow.keys())] = list(bow.values())
+    x = torch.tensor(x, dtype=torch.long)
+    return x
+
+
+def bag_of_words_loss(bow_logits, target_bow, weight=None):
+    ''' Calculate bag of words representation loss
+    Args
+        - bow_logits: [batch_size, vocab_size]
+        - target_bow: [batch_size, vocab_size]
+    '''
+    log_probs = F.log_softmax(bow_logits, dim=1)    # [batch, vocab]
+    target_distribution = target_bow / (target_bow.sum(1).view(-1, 1) + 1e-23) + 1e-23
+    entropy = -(torch.log(target_distribution) * target_bow).sum()
+    loss = -(log_probs * target_bow).sum() - entropy  # too big, affect original NLLLoss
+    loss = loss / target_bow.sum()
+    return loss
 
 
 if __name__ == "__main__":

@@ -256,6 +256,8 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
     For personachat dataset, [sequential edges, last utterence edges, correlation edges (threshold=0.6)]
     
     For ubuntu dataset, [seqential edges, user edges, last utterance edges, correlation edges (threshold=0.6)]
+    
+    For cornell dataset, [seqential edges, last utterance edges, correlation edges (threshold=0.6)]
     '''
     edges = {}
     s_w, u_w = weights
@@ -674,7 +676,7 @@ def analyse_coverage_word_embedding(vocab, lang='en'):
 def analyse_dataset(dataset):
     # analyse the dataset setting, adjust the padding lengths
     with open(f'./data/{dataset}/src-train.txt') as f:
-        turn, tcounter = 0, 0
+        turn, tcounter = [], 0
         i, j, icounter, jcounter = 0, 0, 0, 0
         imax, imin, jmax, jmin = -10000, 10000, -10000, 10000
         for line in f.readlines():
@@ -684,7 +686,7 @@ def analyse_dataset(dataset):
             jmin = min(jmin, len(line.split()))
             jmax = max(jmax, len(line.split()))
             lines = line.strip().split('__eou__')
-            turn += len(lines)
+            turn.append(len(lines))
             tcounter += 1
             for k in lines:
                 i += len(k.split())
@@ -693,7 +695,8 @@ def analyse_dataset(dataset):
                 imax = max(imax, len(k.split()))
     print(f'[!] length of the sentenes(avg, max, min) for hierarchical: {round(i/icounter, 4)}/{imax}/{imin}')
     print(f'[!] length of the sentenes(avg, max, min) for no-hierarchical: {round(j/jcounter, 4)}/{jmax}/{jmin}')
-    print(f'[!] avg turn length: {round(turn/tcounter, 4)}')
+    max_t, min_t, avg_t = max(turn), min(turn), np.mean(turn)
+    print(f'[!] turn length(max/min/avg): {round(max_t, 4)}/{round(min_t, 4)}/{round(avg_t, 4)}')
                 
     
 # ========== function for transformers (GPT2) ==========

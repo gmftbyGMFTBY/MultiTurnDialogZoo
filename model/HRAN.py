@@ -19,7 +19,7 @@ from .layers import *
 HRAN: Hierarchical Recurrent Attention Network for Response Generation
 Compared with other models, HRAN is slow because of the word level attention mechanism. During decoding, every hidden state in the conversation context are saved, so the GPU overload is very high and speed is slow.
 
-Available batch_size for the HRAN is 16. Max lengths of each utterance is 50.
+Available batch_size for the HRAN is 16/32. Max lengths of each utterance is 50.
 '''
 
 

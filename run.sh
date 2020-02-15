@@ -24,6 +24,9 @@ elif [ $model = 'HRAN' ]; then
 elif [ $model = 'VHRED' ]; then
     hierarchical=1
     graph=0
+elif [ $model = 'KgCVAE' ]; then
+    hierarchical=1
+    graph=0
 elif [ $model = 'WSeq' ]; then
     hierarchical=1
     graph=0
@@ -66,7 +69,7 @@ fi
 # for dailydialog dataset, 20 and 150 is the most appropriate settings
 if [ $hierarchical = 1 ]; then
     maxlen=50
-    batch_size=100
+    batch_size=64
 elif [ $transformer_decode = 1 ]; then
     maxlen=150
     batch_size=48
@@ -138,22 +141,25 @@ elif [ $mode = 'vocab' ]; then
 elif [ $mode = 'stat' ]; then
     # analyse the graph information in the dataset
     echo "[!] analyze the graph coverage information"
+    echo "[!] train information:"
     python utils.py \
          --mode stat \
          --dataset $dataset \
-         --graph ./processed/$dataset/$model/train-graph.pkl \
+         --graph ./processed/$dataset/train-graph.pkl \
          --hops 3 
          
+    echo "[!] test information"
     python utils.py \
          --mode stat \
          --dataset $dataset \
-         --graph ./processed/$dataset/$model/test-graph.pkl \
+         --graph ./processed/$dataset/test-graph.pkl \
          --hops 3
          
+    echo "[!] dev information"
     python utils.py \
          --mode stat \
          --dataset $dataset \
-         --graph ./processed/$dataset/$model/dev-graph.pkl \
+         --graph ./processed/$dataset/dev-graph.pkl \
          --hops 3
         
 elif [ $mode = 'graph' ]; then
@@ -165,7 +171,7 @@ elif [ $mode = 'graph' ]; then
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
         --graph ./processed/$dataset/train-graph.pkl \
-        --threshold 0.6 \
+        --threshold 0.8 \
         --maxlen $maxlen \
         --no-bidir \
         --lang $3 \
@@ -179,7 +185,7 @@ elif [ $mode = 'graph' ]; then
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
         --graph ./processed/$dataset/test-graph.pkl \
-        --threshold 0.6 \
+        --threshold 0.8 \
         --maxlen $maxlen \
         --no-bidir \
         --lang $3 \
@@ -193,7 +199,7 @@ elif [ $mode = 'graph' ]; then
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
         --graph ./processed/$dataset/dev-graph.pkl \
-        --threshold 0.6 \
+        --threshold 0.8 \
         --maxlen $maxlen \
         --no-bidir \
         --lang $3 \
@@ -220,7 +226,8 @@ elif [ $mode = 'train' ]; then
     rm tblogs/$dataset/$model/*
     
     # Because of the posterior, the VHRED need to bind the src and tgt vocabulary
-    if [ $model = 'VHRED' ]; then
+    if [[ $model = 'VHRED' || $model = 'KgCVAE' ]]; then
+        echo "[!] VHRED or KgCVAE, src vocab == tgt vocab"
         src_vocab="./processed/$dataset/vocab.pkl"
         tgt_vocab="./processed/$dataset/vocab.pkl"
     else
