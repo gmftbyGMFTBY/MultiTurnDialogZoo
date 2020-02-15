@@ -119,6 +119,14 @@ elif [ $mode = 'perturbation' ]; then
 elif [ $mode = 'vocab' ]; then
     # Generate the src and tgt vocabulary
     echo "[!] Begin to generate the vocab"
+    
+    if [ ! -d "./processed/$dataset" ]; then
+        mkdir -p ./processed/$dataset
+        echo "[!] cannot find the folder, create ./processed/$dataset"
+    else
+        echo "[!] ./processed/$dataset: already exists"
+    fi
+    
     python utils.py \
         --mode vocab \
         --cutoff 50000 \
@@ -131,7 +139,7 @@ elif [ $mode = 'vocab' ]; then
         --vocab ./processed/$dataset/optvocab.pkl \
         --file ./data/$dataset/tgt-train.txt
         
-    # generate the whole vocab for VHRED
+    # generate the whole vocab for VHRED and KgCVAE (Variational model)
     python utils.py \
         --mode vocab \
         --cutoff 50000 \
@@ -225,7 +233,7 @@ elif [ $mode = 'train' ]; then
     cp -r tblogs/$dataset/ ./bak/tblogs
     rm tblogs/$dataset/$model/*
     
-    # Because of the posterior, the VHRED need to bind the src and tgt vocabulary
+    # Because of the posterior, the Variational models need to bind the src and tgt vocabulary
     if [[ $model = 'VHRED' || $model = 'KgCVAE' ]]; then
         echo "[!] VHRED or KgCVAE, src vocab == tgt vocab"
         src_vocab="./processed/$dataset/vocab.pkl"
