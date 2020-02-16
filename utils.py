@@ -215,152 +215,7 @@ def generate_bert_embedding(vocab, path):
     print(f'[!] write the bert embedding into {path}')
     
     
-def create_the_abs_graph(turns, weights=[1, 1], threshold=1, bidir=False, self_loop=False):
-    edges = {}
-    s_w, u_w = weights
-    turn_len = len(turns)
-    for i in range(turn_len):
-        for j in range(i+1, turn_len):
-            edges[(i, j)] = [s_w]
-                
-    # clean the edges
-    e, w = [[], []], []
-    whole_num = 0
-    for src, tgt in edges.keys():
-        e[0].append(src)
-        e[1].append(tgt)
-        w.append(max(edges[(src, tgt)]))
-        whole_num += 1
-        
-        if bidir and src != tgt:
-            e[0].append(tgt)
-            e[1].append(src)
-            w.append(max(edges[(src, tgt)]))
-            whole_num += 1
-            
-    #  print(f'[!] whole edges number: {whole_num}')
-    return (e, w), whole_num
-    
-    
-def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
-    '''create the weighted directed graph of one conversation
-    sequenutial edge, user connected edge, [BERT/PMI] edge
-    param: turns: [turns(user, utterance)]
-    param: weights: [sequential_w, user_w]
-    output: [2, num_edges], [num_edges]
-    
-    For dataset DSTC7, [sequential edges, last_utterence edges, correlation edges (threshold=0.6)]
-    
-    For dataset Dailydialog, [sequential edges, user edges, last utterence edges]
-    
-    For personachat dataset, [sequential edges, last utterence edges, correlation edges (threshold=0.6)]
-    
-    For ubuntu dataset, [seqential edges, user edges, last utterance edges, correlation edges (threshold=0.6)]
-    
-    For cornell dataset, [seqential edges, last utterance edges, correlation edges (threshold=0.6)]
-    '''
-    edges = {}
-    s_w, u_w = weights
-    # sequential edges, (turn_len - 1)
-    turn_len = len(turns)
-    se, ue, pe = 0, 0, 0
-    for i in range(turn_len - 1):
-        edges[(i, i + 1)] = [s_w]
-        se += 1
-        
-    # user edge
-    for i in range(turn_len):
-        for j in range(turn_len):
-            if j > i:
-                if 'user0' in turns[i]:
-                    useri = 'user0'
-                elif 'user1' in turns[i]:
-                    useri = 'user1'
-                else:
-                    ipdb.set_trace()
-                if 'user0' in turns[j]:
-                    userj = 'user0'
-                elif 'user1' in turns[j]:
-                    userj = 'user1'
-                else:
-                    ipdb.set_trace()
-                if useri == userj:
-                    if edges.get((i, j), None):
-                        edges[(i, j)].append(u_w)
-                    else:
-                        edges[(i, j)] = [u_w]
-                    ue += 1
-                    
-    # all for the last query
-    query = turn_len-1
-    for i in range(turn_len):
-        if edges.get((i, query), None):
-            edges[(i, query)].append(u_w)
-        else:
-            edges[(i, query)] = [u_w]
-            
-    # distance
-    utterances = []
-    for utterance in turns:
-        utterance = utterance.replace('user0', '').strip()
-        utterance = utterance.replace('user1', '').strip()
-        if utterance:
-            utterances.append(utterance)
-        else:
-            utterances.append('<unk>')
-            
-    # ========== TFIDF, Counter, GloVe embedding ========== #
-    count_vectorizer = CountVectorizer(tokenizer=nltk.word_tokenize)
-    count_vectors = count_vectorizer.fit_transform(utterances).toarray()    # [datasize, word_size]
-    # print(f'[!] over the count fit_transform, shape {count_vectors.shape}')
-    tfidf_vectorizer = TfidfVectorizer(tokenizer=nltk.word_tokenize)
-    tfidf_vectors = tfidf_vectorizer.fit_transform(utterances).toarray()    # [datasize, word_size]
-    # print(f'[!] over the tfidf fit_transform, shape: {tfidf_vectors.shape}')
-        
-    # add the edges accorading to the TFIDF and Counter information
-    for i in range(turn_len):
-        for j in range(turn_len):
-            if j > i:
-                utter1, utter2 = count_vectors[i], count_vectors[j]
-                # jaccard
-                jaccard = jaccard_similarity(utter1, utter2)
-                # cosine + tf
-                cosine_tf = cosine_similarity_tf(utter1, utter2)
-                # cosine + tfidf 
-                cosine_tf_idf = cosine_similarity_tfidf(utter1, utter2)
-                # glove embedding
-                # utter1 = sent2glove(vocab, utterances[i])
-                # utter2 = sent2glove(vocab, utterances[j])
-                # glove = cos_similarity(utter1, utter2)
-                
-                weight = max([jaccard, cosine_tf, cosine_tf_idf])
-                
-                if weight >= threshold:
-                    if edges.get((i, j), None):
-                        edges[(i, j)].append(weight * u_w)
-                    else:
-                        edges[(i, j)] = [weight * u_w]
-                    pe += 1
-
-    # clean the edges
-    e, w = [[], []], []
-    whole_num = 0
-    for src, tgt in edges.keys():
-        e[0].append(src)
-        e[1].append(tgt)
-        w.append(max(edges[(src, tgt)]))
-        whole_num += 1
-        
-        if bidir and src != tgt:
-            e[0].append(tgt)
-            e[1].append(src)
-            w.append(max(edges[(src, tgt)]))
-            whole_num += 1
-            
-    # print(f'[!] whole number edges is {whole_num}')
-    return (e, w), whole_num
-
-
+# load data function for hierarchical models
 def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
     # convert dataset into src: [datasize, turns, lengths]
     # convert dataset into tgt: [datasize, lengths]
@@ -405,6 +260,157 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
  
     # src_user: [datasize, turn], tgt_user: [datasize]
     return src_dataset, src_user, tgt_dataset, tgt_user
+    
+    
+    
+def create_the_abs_graph(turns, weights=[1, 1], threshold=1, bidir=False, self_loop=False):
+    edges = {}
+    s_w, u_w = weights
+    turn_len = len(turns)
+    for i in range(turn_len):
+        for j in range(i+1, turn_len):
+            edges[(i, j)] = [s_w]
+                
+    # clean the edges
+    e, w = [[], []], []
+    whole_num = 0
+    for src, tgt in edges.keys():
+        e[0].append(src)
+        e[1].append(tgt)
+        w.append(max(edges[(src, tgt)]))
+        whole_num += 1
+        
+        if bidir and src != tgt:
+            e[0].append(tgt)
+            e[1].append(src)
+            w.append(max(edges[(src, tgt)]))
+            whole_num += 1
+            
+    #  print(f'[!] whole edges number: {whole_num}')
+    return (e, w), whole_num
+    
+    
+def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
+    '''create the weighted directed graph of one conversation
+    sequenutial edge, user connected edge, [BERT/PMI] edge
+    param: turns: [turns(user, utterance)]
+    param: weights: [sequential_w, user_w]
+    output: [2, num_edges], [num_edges]
+    
+    For dataset DSTC7, [sequential edges, last_utterence edges, user edges, self-loop]
+    
+    For dataset Dailydialog, [sequential edges, last utterence edges, user edges, self-loop]
+    
+    For personachat dataset, [sequential edges, last utterence edges, user edges, self-loop]
+    
+    For ubuntu dataset, [seqential edges, user edges, last utterance edges, correlation edges (threshold=0.6)]
+    
+    For cornell dataset, [seqential edges, last utterance edges, correlation edges (threshold=0.6)]
+    
+    For empchat dataset, [sequentil edges, last utterance edges, user edges]
+    '''
+    edges = {}
+    s_w, u_w = weights
+    # sequential edges, (turn_len - 1)
+    turn_len = len(turns)
+    se, ue, pe = 0, 0, 0
+    for i in range(turn_len - 1):
+        edges[(i, i + 1)] = [s_w]
+        se += 1
+        
+    # user edge
+    for i in range(turn_len):
+        for j in range(turn_len):
+            if j > i:
+                if 'user0' in turns[i]:
+                    useri = 'user0'
+                elif 'user1' in turns[i]:
+                    useri = 'user1'
+                else:
+                    ipdb.set_trace()
+                if 'user0' in turns[j]:
+                    userj = 'user0'
+                elif 'user1' in turns[j]:
+                    userj = 'user1'
+                else:
+                    ipdb.set_trace()
+                if useri == userj:
+                    if edges.get((i, j), None):
+                        edges[(i, j)].append(u_w)
+                    else:
+                        edges[(i, j)] = [u_w]
+                    ue += 1
+                    
+    # all for the last query
+    query = turn_len-1
+    for i in range(turn_len):
+        if edges.get((i, query), None):
+            edges[(i, query)].append(u_w)
+        else:
+            edges[(i, query)] = [u_w]
+           
+    '''
+    # distance
+    utterances = []
+    for utterance in turns:
+        utterance = utterance.replace('user0', '').strip()
+        utterance = utterance.replace('user1', '').strip()
+        if utterance:
+            utterances.append(utterance)
+        else:
+            utterances.append('<unk>')
+            
+    # ========== TFIDF, Counter, GloVe embedding ========== #
+    count_vectorizer = CountVectorizer(tokenizer=nltk.word_tokenize)
+    count_vectors = count_vectorizer.fit_transform(utterances).toarray()    # [datasize, word_size]
+    # print(f'[!] over the count fit_transform, shape {count_vectors.shape}')
+    tfidf_vectorizer = TfidfVectorizer(tokenizer=nltk.word_tokenize)
+    tfidf_vectors = tfidf_vectorizer.fit_transform(utterances).toarray()    # [datasize, word_size]
+    # print(f'[!] over the tfidf fit_transform, shape: {tfidf_vectors.shape}')
+        
+    # add the edges accorading to the TFIDF and Counter information
+    for i in range(turn_len):
+        for j in range(turn_len):
+            if j > i:
+                utter1, utter2 = count_vectors[i], count_vectors[j]
+                # jaccard
+                jaccard = jaccard_similarity(utter1, utter2)
+                # cosine + tf
+                cosine_tf = cosine_similarity_tf(utter1, utter2)
+                # cosine + tfidf 
+                cosine_tf_idf = cosine_similarity_tfidf(utter1, utter2)
+                # glove embedding
+                # utter1 = sent2glove(vocab, utterances[i])
+                # utter2 = sent2glove(vocab, utterances[j])
+                # glove = cos_similarity(utter1, utter2)
+                
+                weight = max([jaccard, cosine_tf, cosine_tf_idf])
+                
+                if weight >= threshold:
+                    if edges.get((i, j), None):
+                        edges[(i, j)].append(weight * u_w)
+                    else:
+                        edges[(i, j)] = [weight * u_w]
+                    pe += 1
+    '''
+
+    # clean the edges
+    e, w = [[], []], []
+    whole_num = 0
+    for src, tgt in edges.keys():
+        e[0].append(src)
+        e[1].append(tgt)
+        w.append(max(edges[(src, tgt)]))
+        whole_num += 1
+        
+        if bidir and src != tgt:
+            e[0].append(tgt)
+            e[1].append(src)
+            w.append(max(edges[(src, tgt)]))
+            whole_num += 1
+            
+    # print(f'[!] whole number edges is {whole_num}')
+    return (e, w), whole_num
 
 
 def generate_graph(dialogs, path, fully=False, threshold=0.75, 
@@ -673,9 +679,10 @@ def analyse_coverage_word_embedding(vocab, lang='en'):
     print(f'[!] the coverage of the word embedding is {count}/{len(idx2w)}/{round(count / len(idx2w), 2)}')
     
     
-def analyse_dataset(dataset):
+def analyse_dataset(dataset, split):
     # analyse the dataset setting, adjust the padding lengths
-    with open(f'./data/{dataset}/src-train.txt') as f:
+    print(f'[!] the metadata of {dataset}-{split}')
+    with open(f'./data/{dataset}/src-{split}.txt') as f:
         turn, tcounter = [], 0
         i, j, icounter, jcounter = 0, 0, 0, 0
         imax, imin, jmax, jmin = -10000, 10000, -10000, 10000
@@ -820,6 +827,7 @@ if __name__ == "__main__":
     parser.add_argument('--no-fully', dest='fully', action='store_false')
     parser.add_argument('--self-loop', dest='self_loop', action='store_true')
     parser.add_argument('--no-self-loop', dest='self_loop', action='store_false')
+    parser.add_argument('--split', type=str, default='train')
     
     args = parser.parse_args()
 
@@ -844,8 +852,9 @@ if __name__ == "__main__":
                        self_loop=args.self_loop)
     elif mode == 'stat':
         # too slow, ban it
-        # analyse_graph(args.graph, hops=args.hops)
-        analyse_dataset(args.dataset)
+        # analyse_graph(f'./processed/{args.dataset}/{args.split}-graph.pkl',
+        #               hops=args.hops)
+        analyse_dataset(args.dataset, args.split)
     elif mode == 'perturbation':
         if args.perturbation_in and args.perturbation_out:
             Perturbations_test(args.perturbation_in, args.perturbation_out, mode=args.perturbation_mode)

@@ -13,8 +13,9 @@ if [ ! $model ]; then
     CUDA=0
 fi
 
-# hierarchical
-# no-role, no-corrleation, no-sequential for graph ablation study
+# running mode (hierarchical/graph):
+# no-hierarchical: Seq2Seq; hierarchical: HRED, VHRED, WSeq, ...
+# graph: MTGAT, MTGCN; no-graph: Seq2Seq, HRED, VHRED, WSeq, ...
 if [ $model = 'HRED' ]; then
     hierarchical=1
     graph=0
@@ -52,7 +53,6 @@ elif [ $model = 'GatedGCN' ]; then
     hierarchical=1
     graph=1
 else
-    echo "[!] Illegal model name $model"
     hierarchical=0
     graph=0
 fi
@@ -69,7 +69,7 @@ fi
 # for dailydialog dataset, 20 and 150 is the most appropriate settings
 if [ $hierarchical = 1 ]; then
     maxlen=50
-    batch_size=64
+    batch_size=128
 elif [ $transformer_decode = 1 ]; then
     maxlen=150
     batch_size=48
@@ -153,21 +153,21 @@ elif [ $mode = 'stat' ]; then
     python utils.py \
          --mode stat \
          --dataset $dataset \
-         --graph ./processed/$dataset/train-graph.pkl \
-         --hops 3 
+         --hops 3 \
+         --split train
          
     echo "[!] test information"
     python utils.py \
          --mode stat \
          --dataset $dataset \
-         --graph ./processed/$dataset/test-graph.pkl \
+         --split test \
          --hops 3
          
     echo "[!] dev information"
     python utils.py \
          --mode stat \
          --dataset $dataset \
-         --graph ./processed/$dataset/dev-graph.pkl \
+         --split dev \
          --hops 3
         
 elif [ $mode = 'graph' ]; then
@@ -179,12 +179,12 @@ elif [ $mode = 'graph' ]; then
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
         --graph ./processed/$dataset/train-graph.pkl \
-        --threshold 0.8 \
+        --threshold 0.85 \
         --maxlen $maxlen \
         --no-bidir \
         --lang $3 \
         --no-fully \
-        --no-self-loop \
+        --self-loop \
     
     python utils.py \
         --mode graph \
@@ -193,12 +193,12 @@ elif [ $mode = 'graph' ]; then
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
         --graph ./processed/$dataset/test-graph.pkl \
-        --threshold 0.8 \
+        --threshold 0.85 \
         --maxlen $maxlen \
         --no-bidir \
         --lang $3 \
         --no-fully \
-        --no-self-loop \
+        --self-loop \
 
     python utils.py \
         --mode graph \
@@ -207,12 +207,12 @@ elif [ $mode = 'graph' ]; then
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
         --graph ./processed/$dataset/dev-graph.pkl \
-        --threshold 0.8 \
+        --threshold 0.85 \
         --maxlen $maxlen \
         --no-bidir \
         --lang $3 \
         --no-fully \
-        --no-self-loop \
+        --self-loop \
         
 elif [ $mode = 'train' ]; then
     # cp -r ./ckpt/$dataset/$model ./bak/ckpt    # too big, stop back up it
@@ -309,7 +309,7 @@ elif [ $mode = 'train' ]; then
         --lr_mini 1e-6 \
         --lr_gamma 0.5 \
         --warmup_step 4000 \
-        --gat_heads 5 \
+        --gat_heads 8 \
 
 elif [ $mode = 'translate' ]; then
     rm ./processed/$dataset/$model/ppl.txt
