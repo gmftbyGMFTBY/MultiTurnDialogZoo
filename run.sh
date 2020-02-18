@@ -69,7 +69,7 @@ fi
 # for dailydialog dataset, 20 and 150 is the most appropriate settings
 if [ $hierarchical = 1 ]; then
     maxlen=50
-    batch_size=128
+    batch_size=64
 elif [ $transformer_decode = 1 ]; then
     maxlen=150
     batch_size=48
@@ -179,12 +179,12 @@ elif [ $mode = 'graph' ]; then
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
         --graph ./processed/$dataset/train-graph.pkl \
-        --threshold 0.85 \
+        --threshold 0.8 \
         --maxlen $maxlen \
         --no-bidir \
         --lang $3 \
         --no-fully \
-        --self-loop \
+        --no-self-loop \
     
     python utils.py \
         --mode graph \
@@ -193,12 +193,12 @@ elif [ $mode = 'graph' ]; then
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
         --graph ./processed/$dataset/test-graph.pkl \
-        --threshold 0.85 \
+        --threshold 0.8 \
         --maxlen $maxlen \
         --no-bidir \
         --lang $3 \
         --no-fully \
-        --self-loop \
+        --no-self-loop \
 
     python utils.py \
         --mode graph \
@@ -207,12 +207,12 @@ elif [ $mode = 'graph' ]; then
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
         --graph ./processed/$dataset/dev-graph.pkl \
-        --threshold 0.85 \
+        --threshold 0.8 \
         --maxlen $maxlen \
         --no-bidir \
         --lang $3 \
         --no-fully \
-        --self-loop \
+        --no-self-loop \
         
 elif [ $mode = 'train' ]; then
     # cp -r ./ckpt/$dataset/$model ./bak/ckpt    # too big, stop back up it

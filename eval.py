@@ -17,6 +17,7 @@ if __name__ == "__main__":
     with open(args.file) as f:
         ref, tgt = [], []
         for idx, line in enumerate(f.readlines()):
+            line = line.lower()
             if idx % 4 == 1:
                 line = line.replace("user1", "").replace("user0", "").replace("- ref: ", "").replace('<sos>', '').replace('<eos>', '').strip()
                 ref.append(line.split())
@@ -30,11 +31,14 @@ if __name__ == "__main__":
     rouge_sum, bleu1_sum, bleu2_sum, bleu3_sum, bleu4_sum, counter = 0, 0, 0, 0, 0, 0
     for rr, cc in tqdm(list(zip(ref, tgt))):
         rouge_sum += cal_ROUGE(rr, cc)
-        bleu1_sum += cal_BLEU([rr], cc, ngram=1)
-        bleu2_sum += cal_BLEU([rr], cc, ngram=2)
-        bleu3_sum += cal_BLEU([rr], cc, ngram=3)
-        bleu4_sum += cal_BLEU([rr], cc, ngram=4)
+        # bleu1_sum += cal_BLEU([rr], cc, ngram=1)
+        # bleu2_sum += cal_BLEU([rr], cc, ngram=2)
+        # bleu3_sum += cal_BLEU([rr], cc, ngram=3)
+        # bleu4_sum += cal_BLEU([rr], cc, ngram=4)
         counter += 1
+        
+    refs, tgts = [' '.join(i) for i in ref], [' '.join(i) for i in tgt]
+    bleu1_sum, bleu2_sum, bleu3_sum, bleu4_sum = cal_BLEU(refs, tgts)
 
     # Distinct-1, Distinct-2
     candidates, references = [], []
@@ -62,10 +66,10 @@ if __name__ == "__main__":
         counterp += 1
 
     print(f'Model {args.model} Result')
-    print(f'BLEU-1: {round(bleu1_sum / counter, 4)}')
-    print(f'BLEU-2: {round(bleu2_sum / counter, 4)}')
-    print(f'BLEU-3: {round(bleu3_sum / counter, 4)}')
-    print(f'BLEU-4: {round(bleu4_sum / counter, 4)}')
+    print(f'BLEU-1: {round(bleu1_sum, 4)}')
+    print(f'BLEU-2: {round(bleu2_sum, 4)}')
+    print(f'BLEU-3: {round(bleu3_sum, 4)}')
+    print(f'BLEU-4: {round(bleu4_sum, 4)}')
     print(f'ROUGE: {round(rouge_sum / counter, 4)}')
     print(f'Distinct-1: {round(distinct_1, 4)}; Distinct-2: {round(distinct_2, 4)}')
     print(f'Ref distinct-1: {round(rdistinct_1, 4)}; Ref distinct-2: {round(rdistinct_2, 4)}')

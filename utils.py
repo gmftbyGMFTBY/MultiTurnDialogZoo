@@ -264,11 +264,14 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
     
     
 def create_the_abs_graph(turns, weights=[1, 1], threshold=1, bidir=False, self_loop=False):
+    '''
+    empchat: fully connected network
+    '''
     edges = {}
     s_w, u_w = weights
     turn_len = len(turns)
     for i in range(turn_len):
-        for j in range(i+1, turn_len):
+        for j in range(turn_len):
             edges[(i, j)] = [s_w]
                 
     # clean the edges
@@ -301,23 +304,24 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
     
     For dataset Dailydialog, [sequential edges, last utterence edges, user edges, self-loop]
     
-    For personachat dataset, [sequential edges, last utterence edges, user edges, self-loop]
+    For personachat dataset, [last utterence edges, correlation edges (threshold=0.8)]
     
     For ubuntu dataset, [seqential edges, user edges, last utterance edges, correlation edges (threshold=0.6)]
     
     For cornell dataset, [seqential edges, last utterance edges, correlation edges (threshold=0.6)]
     
-    For empchat dataset, [sequentil edges, last utterance edges, user edges]
+    For empchat dataset, [sequentil edges, last utterance edges, user edges, self-loop]
     '''
     edges = {}
     s_w, u_w = weights
     # sequential edges, (turn_len - 1)
     turn_len = len(turns)
     se, ue, pe = 0, 0, 0
+    '''
     for i in range(turn_len - 1):
         edges[(i, i + 1)] = [s_w]
         se += 1
-        
+    
     # user edge
     for i in range(turn_len):
         for j in range(turn_len):
@@ -340,16 +344,22 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
                     else:
                         edges[(i, j)] = [u_w]
                     ue += 1
+    '''
                     
+    # ========== NOTE NOTE NOTE ========== #
     # all for the last query
+    # NOTE: Remember to reverse the direction
     query = turn_len-1
     for i in range(turn_len):
-        if edges.get((i, query), None):
-            edges[(i, query)].append(u_w)
+        # if edges.get((i, query), None):
+        if edges.get((query, i), None):
+            # edges[(i, query)].append(u_w)
+            edges[(query, i)].append(u_w)
         else:
-            edges[(i, query)] = [u_w]
+            # edges[(i, query)] = [u_w]
+            edges[(query, i)] = [u_w]
            
-    '''
+    
     # distance
     utterances = []
     for utterance in turns:
@@ -392,7 +402,7 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
                     else:
                         edges[(i, j)] = [weight * u_w]
                     pe += 1
-    '''
+    
 
     # clean the edges
     e, w = [[], []], []
@@ -474,57 +484,35 @@ def analyse_graph(path, hops=3):
     and cornell dataset.
     Stat the context node coverage of each node in the conversation.
     :param: path, the path of the dataset graph file.
-    '''
-    def coverage(nodes, edges):
-        # return the coverage information of each node
-        # return list of tuple (context nodes, coverage nodes)
-        # edges to dict
-        e = {}
-        for i, j in zip(edges[0], edges[1]):
-            if i > j:
-                continue
-            if e.get(j, None):
-                e[j].append(i)
-            else:
-                e[j] = [i]
-        for key in e.keys():    # make the set
-            e[key] = list(set(e[key]))
-        collector = []
-        for node in nodes:
-            # context nodes
-            context_nodes = list(range(0, node))
-            if context_nodes:
-                # ipdb.set_trace()
-                # coverage nodes, BFS
-                coverage_nodes, tools, tidx = [], [(node, 0)], 0
-                while True:
-                    try:
-                        n, nidx = tools[tidx]
-                    except:
-                        break
-                    if nidx < hops:
-                        for src in e[n]:
-                            if src not in tools:
-                                tools.append((src, nidx + 1))
-                            if src not in coverage_nodes:
-                                coverage_nodes.append(src)
-                    tidx += 1
-                collector.append((len(context_nodes), len(coverage_nodes)))
-        return collector
-        
+    ''' 
     graph = load_pickle(path)    # [datasize, ([2, num_edge], [num_edge])]
-    avg_cover = []
+    sum_graph, sum_in, sum_out = [], [], []
     for idx, (edges, _) in enumerate(tqdm(graph)):
         # make sure the number of the nodes
-        nodes = []
-        for i, j in zip(edges[0], edges[1]):
-            if i == j and i not in nodes:
-                nodes.append(i)
-        avg_cover.extend(coverage(nodes, edges))
+        sum_graph.append(len(edges[0]))
+        # in degree
+        sum_in_dict = {}
+        for i in edges[1]:
+            if i in sum_in_dict:
+                sum_in_dict[i] += 1
+            else:
+                sum_in_dict[i] = 1
+        sum_in.extend(list(sum_in_dict.values()))
+        sum_out_dict = {}
+        for i in edges[0]:
+            if i in sum_out_dict:
+                sum_out_dict[i] += 1
+            else:
+                sum_out_dict[i] = 1
+        sum_out.extend(list(sum_out_dict.values()))
         
     # ========== stat ========== #
-    ratio = [i / j for i, j in avg_cover]
-    print(f'[!] the avg graph coverage of the context is {round(np.mean(ratio), 4)}')
+    avg_graph = np.mean(sum_graph)
+    avg_in = np.mean(sum_in)
+    avg_out = np.mean(sum_out)
+    print(f'[!] the avg graph numbers: {round(avg_graph, 4)}')
+    print(f'[!] the avg in-degree numbers: {round(avg_in, 4)}')
+    print(f'[!] the avg out_degree numbers: {round(avg_out, 4)}')
     
     
 def Perturbations_test(src_test_in, src_test_out, mode=1):
@@ -851,9 +839,8 @@ if __name__ == "__main__":
                        bidir=args.bidir, lang=args.lang, fully=args.fully,
                        self_loop=args.self_loop)
     elif mode == 'stat':
-        # too slow, ban it
-        # analyse_graph(f'./processed/{args.dataset}/{args.split}-graph.pkl',
-        #               hops=args.hops)
+        analyse_graph(f'./processed/{args.dataset}/{args.split}-graph.pkl',
+                      hops=args.hops)
         analyse_dataset(args.dataset, args.split)
     elif mode == 'perturbation':
         if args.perturbation_in and args.perturbation_out:

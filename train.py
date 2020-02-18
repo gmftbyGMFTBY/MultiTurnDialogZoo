@@ -320,6 +320,7 @@ def write_into_tb(pred_path, writer, writer_str, epoch, ppl, bleu_mode, model, d
     with open(pred_path) as f:
         ref, tgt = [], []
         for idx, line in enumerate(f.readlines()):
+            line = line.lower()    # lower the case
             if idx % 4 == 1:
                 line = line.replace("user1", "").replace("user0", "").replace("- ref: ", "").replace('<sos>', '').replace('<eos>', '').strip()
                 ref.append(line.split())
