@@ -2,7 +2,7 @@ import tqdm
 import ipdb
 
 '''
-Download PersonaChat / Dailydialog / DSTC7_AVSD dataset from: https://github/com/PaddlePaddle/models/tree/75e463a22ef6cbd43f47917a62ee43d13a05831e/PaddleNLP/Research/Dialogue-PLATO
+Download PersonaChat / Dailydialog / DSTC7_AVSD dataset from: https://github.com/PaddlePaddle/models/tree/75e463a22ef6cbd43f47917a62ee43d13a05831e/PaddleNLP/Research/Dialogue-PLATO
 
 # DATASET: DailyDialog, PersonaChat, DSTC7_AVSD
 # MODE: train, test, valid

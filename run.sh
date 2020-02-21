@@ -22,6 +22,9 @@ if [ $model = 'HRED' ]; then
 elif [ $model = 'HRAN' ]; then
     hierarchical=1
     graph=0
+elif [ $model = 'HRAN-ablation' ]; then
+    hierarchical=1
+    graph=0
 elif [ $model = 'VHRED' ]; then
     hierarchical=1
     graph=0
@@ -69,12 +72,15 @@ fi
 # for dailydialog dataset, 20 and 150 is the most appropriate settings
 if [ $hierarchical = 1 ]; then
     maxlen=50
-    batch_size=64
+    tgtmaxlen=30
+    batch_size=256
 elif [ $transformer_decode = 1 ]; then
-    maxlen=150
-    batch_size=48
+    maxlen=200
+    tgtmaxlen=25
+    batch_size=16
 else
     maxlen=150
+    tgtmaxlen=50
     batch_size=64
 fi
 
@@ -246,9 +252,13 @@ elif [ $mode = 'train' ]; then
     # dropout for transformer
     if [ $model = 'Transformer' ]; then
         # other repo set the 0.1 as the dropout ratio, remain it
-        dropout=0.1
+        dropout=0.3
+        lr=1e-4
+        lr_mini=1e-4
     else
         dropout=0.3
+        lr=1e-4
+        lr_mini=1e-4
     fi
     
     echo "[!] back up finished"
@@ -272,10 +282,10 @@ elif [ $mode = 'train' ]; then
         --dev_graph ./processed/$dataset/dev-graph.pkl \
         --pred ./processed/${dataset}/${model}/pred.txt \
         --min_threshold 0 \
-        --max_threshold 100 \
+        --max_threshold 200 \
         --seed 30 \
-        --epochs 100 \
-        --lr 1e-4 \
+        --epochs 200 \
+        --lr $lr \
         --batch_size $batch_size \
         --model $model \
         --utter_n_layer 2 \
@@ -284,12 +294,12 @@ elif [ $mode = 'train' ]; then
         --context_hidden 512 \
         --decoder_hidden 512 \
         --embed_size 256 \
-        --patience 5 \
+        --patience 10 \
         --dataset $dataset \
         --grad_clip 3.0 \
         --dropout $dropout \
         --d_model 512 \
-        --nhead 16 \
+        --nhead 8 \
         --num_encoder_layers 8 \
         --num_decoder_layers 8 \
         --dim_feedforward 2048 \
@@ -297,7 +307,8 @@ elif [ $mode = 'train' ]; then
         --transformer_decode $transformer_decode \
         --graph $graph \
         --maxlen $maxlen \
-        --position_embed_size 30 \
+        --tgt_maxlen $tgtmaxlen \
+        --position_embed_size 500 \
         --context_threshold 2 \
         --dynamic_tfr 15 \
         --dynamic_tfr_weight 0.0 \
@@ -306,7 +317,7 @@ elif [ $mode = 'train' ]; then
         --bleu nltk \
         --contextrnn \
         --no-debug \
-        --lr_mini 1e-6 \
+        --lr_mini $lr_mini \
         --lr_gamma 0.5 \
         --warmup_step 4000 \
         --gat_heads 8 \

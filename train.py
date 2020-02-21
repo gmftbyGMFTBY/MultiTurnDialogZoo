@@ -17,6 +17,7 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 import ipdb
 import transformers
+import gensim
 
 from utils import *
 from data_loader import *
@@ -27,6 +28,7 @@ from model.HRED import HRED
 from model.VHRED import VHRED
 from model.KgCVAE import KgCVAE
 from model.HRAN import HRAN
+from model.HRAN_ablation import HRAN_ablation
 from model.WSeq import WSeq
 from model.DSHRED import DSHRED
 from model.MReCoSa import MReCoSa
@@ -50,8 +52,6 @@ def train(train_iter, net, optimizer, vocab_size, pad,
         # [turn, length, batch], [seq_len, batch] / [seq_len, batch], [seq_len, batch]
         if graph:
             sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths = batch
-        elif transformer_decode:
-            sbatch, tbatch, src_key_padding_mask, tgt_key_padding_mask = batch
         else:
             sbatch, tbatch, turn_lengths = batch
         batch_size = tbatch.shape[1]
@@ -65,45 +65,31 @@ def train(train_iter, net, optimizer, vocab_size, pad,
         if graph:
             output = net(sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths)
         else:
-            if transformer_decode:
-                memory_key_padding_mask = src_key_padding_mask.clone()
-                output = net(sbatch, tbatch, 
-                             src_key_padding_mask, 
-                             tgt_key_padding_mask, 
-                             memory_key_padding_mask)
-            else:
-                output = net(sbatch, tbatch, turn_lengths)
+            output = net(sbatch, tbatch, turn_lengths)
         
-        if transformer_decode:
-            loss = criterion(output[:-1].view(-1, vocab_size),
-                             tbatch[1:].contiguous().view(-1))
-        else:
-            if type(output) == tuple:
-                # VHRED model, KL divergence add to the loss
-                if len(output) == 2:
-                    output, kl_div = output
-                elif len(output) == 3:
-                    output, kl_div, bow_loss = output
-                else:
-                    raise Exception('[!] wrong')
+        if type(output) == tuple:
+            # VHRED model, KL divergence add to the loss
+            if len(output) == 2:
+                output, kl_div = output
+            elif len(output) == 3:
+                output, kl_div, bow_loss = output
             else:
-                kl_div, bow_loss = None, None
-            loss = criterion(output[1:].view(-1, vocab_size),
-                             tbatch[1:].contiguous().view(-1))
-            if kl_div:
-                loss += kl_mult * kl_div
-            if bow_loss:
-                loss += bow_loss
+                raise Exception('[!] wrong')
+        else:
+            kl_div, bow_loss = None, None
+        loss = criterion(output[1:].view(-1, vocab_size),
+                         tbatch[1:].contiguous().view(-1))
+        if kl_div:
+            loss += kl_mult * kl_div
+        if bow_loss:
+            loss += bow_loss
             
         # add train loss to the tensorfboard
         # writer.add_scalar(f'{writer_str}-Loss/train-{epoch}', loss, idx)
 
         loss.backward()
         clip_grad_norm_(net.parameters(), grad_clip)
-        if transformer_decode:
-            optimizer.step_and_update_lr()
-        else:
-            optimizer.step()
+        optimizer.step()
         total_loss += loss.item()
         batch_num += 1
 
@@ -133,8 +119,6 @@ def validation(data_iter, net, vocab_size, pad,
     for idx, batch in enumerate(pbar):
         if graph:
             sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths = batch
-        elif transformer_decode:
-            sbatch, tbatch, src_key_padding_mask, tgt_key_padding_mask = batch
         else:
             sbatch, tbatch, turn_lengths = batch
         batch_size = tbatch.shape[1]
@@ -144,29 +128,18 @@ def validation(data_iter, net, vocab_size, pad,
         if graph:
             output = net(sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths)
         else:
-            if transformer_decode:
-                memory_key_padding_mask = src_key_padding_mask.clone()
-                output = net(sbatch, tbatch, 
-                             src_key_padding_mask, 
-                             tgt_key_padding_mask, 
-                             memory_key_padding_mask)
-            else:
-                output = net(sbatch, tbatch, turn_lengths)
+            output = net(sbatch, tbatch, turn_lengths)
                 
-        if transformer_decode:
-            loss = criterion(output[:-1].view(-1, vocab_size),
-                             tbatch[1:].contiguous().view(-1))
-        else:
-            if type(output) == tuple:
-                # VHRED model, KL divergence add to the loss
-                if len(output) == 2:
-                    output, _ = output
-                elif len(output) == 3:
-                    output, _, _ = output
-                else:
-                    raise Exception('[!] wrong')
-            loss = criterion(output[1:].view(-1, vocab_size),
-                             tbatch[1:].contiguous().view(-1))
+        if type(output) == tuple:
+            # VHRED model, KL divergence add to the loss
+            if len(output) == 2:
+                output, _ = output
+            elif len(output) == 3:
+                output, _, _ = output
+            else:
+                raise Exception('[!] wrong')
+        loss = criterion(output[1:].view(-1, vocab_size),
+                         tbatch[1:].contiguous().view(-1))
                 
         total_loss += loss.item()
         batch_num += 1
@@ -191,7 +164,6 @@ def translate(data_iter, net, **kwargs):
     src_vocab = load_pickle(kwargs['src_vocab'])
     src_w2idx, src_idx2w = src_vocab
     tgt_w2idx, tgt_idx2w = tgt_vocab
-    
     # calculate the loss
     criterion = nn.NLLLoss(ignore_index=tgt_w2idx['<pad>'])
     total_loss, batch_num = 0.0, 0
@@ -202,8 +174,6 @@ def translate(data_iter, net, **kwargs):
         for batch in pbar:
             if kwargs['graph'] == 1:
                 sbatch, tbatch, gbatch, subatch, tubatch, turn_lengths = batch
-            elif kwargs['transformer_decode'] == 1:
-                sbatch, tbatch, src_key_padding_mask, tgt_key_padding_mask = batch
             else:
                 sbatch, tbatch, turn_lengths = batch
 
@@ -220,44 +190,27 @@ def translate(data_iter, net, **kwargs):
                                           subatch, tubatch, 
                                           len(tbatch), turn_lengths,
                                           loss=True)
-            elif kwargs['transformer_decode'] == 1:
-                memory_key_padding_mask = src_key_padding_mask.clone()
-                output, _ = net.predict(sbatch, src_key_padding_mask,
-                                        memory_key_padding_mask, len(tbatch))
             else:
                 output, _ = net.predict(sbatch, len(tbatch), turn_lengths,
-                                          loss=True)
+                                        loss=True)
                 
             # true working ppl by using teach_force
             with torch.no_grad():
-                if kwargs['transformer_decode'] == 0:
-                    hold_teach = net.teach_force
-                    net.teach_force = 1.0
                 if kwargs['graph'] == 1:
                     f_l = net(sbatch, tbatch, gbatch, 
                               subatch, tubatch, turn_lengths)
-                elif kwargs['transformer_decode'] == 1:
-                    f_l = net(sbatch, tbatch, 
-                              src_key_padding_mask, 
-                              tgt_key_padding_mask,
-                              memory_key_padding_mask)
                 else:
                     f_l = net(sbatch, tbatch, turn_lengths)
                     if type(f_l) == tuple:
                         f_l = f_l[0]
-                if kwargs['transformer_decode'] == 0:
-                    net.teach_force = hold_teach
             # teach_force over
             
-            if kwargs['transformer_decode']:
-                loss = criterion(f_l[:-1].view(-1, len(tgt_w2idx)),
-                                 tbatch[1:].contiguous().view(-1))
-            else:
-                loss = criterion(f_l[1:].view(-1, len(tgt_w2idx)),
-                                 tbatch[1:].contiguous().view(-1))
+            loss = criterion(f_l[1:].view(-1, len(tgt_w2idx)),
+                             tbatch[1:].contiguous().view(-1))
             batch_num += 1
             total_loss += loss.item()
-            
+                
+            # ipdb.set_trace()
             for i in range(batch_size):
                 ref = list(map(int, tbatch[:, i].tolist()))
                 tgt = list(map(int, output[:, i].tolist()))    # [maxlen]
@@ -333,7 +286,8 @@ def write_into_tb(pred_path, writer, writer_str, epoch, ppl, bleu_mode, model, d
     # ROUGE
     rouge_sum, bleu1_sum, bleu2_sum, bleu3_sum, bleu4_sum, counter = 0, 0, 0, 0, 0, 0
     for rr, cc in tqdm(list(zip(ref, tgt))):
-        rouge_sum += cal_ROUGE(rr, cc)
+        # rouge_sum += cal_ROUGE(rr, cc)
+        rouge_sum += 0.01
         counter += 1
     
     # BlEU
@@ -356,8 +310,10 @@ def write_into_tb(pred_path, writer, writer_str, epoch, ppl, bleu_mode, model, d
     
     # Embedding-based metric: Embedding Average (EA), Vector Extrema (VX), Greedy Matching (GM)
     # load the dict
-    with open('./data/glove_embedding.pkl', 'rb') as f:
-        dic = pickle.load(f)
+    # with open('./data/glove_embedding.pkl', 'rb') as f:
+    #     dic = pickle.load(f)
+    dic = gensim.models.KeyedVectors.load_word2vec_format('./data/GoogleNews-vectors-negative300.bin', binary=True)
+    print('[!] load the GoogleNews 300 word2vector by gensim over')
     ea_sum, vx_sum, gm_sum, counterp = 0, 0, 0, 0
     for rr, cc in tqdm(list(zip(ref, tgt))):
         ea_sum += cal_embedding_average(rr, cc, dic)
@@ -391,7 +347,7 @@ def main(**kwargs):
     src_vocab, tgt_vocab = load_pickle(kwargs['src_vocab']), load_pickle(kwargs['tgt_vocab'])
     src_w2idx, src_idx2w = src_vocab
     tgt_w2idx, tgt_idx2w = tgt_vocab
-    print(f'[!] load vocab over, src/tgt vocab size: {len(src_idx2w)}/{len(tgt_idx2w)}')
+    print(f'[!] load vocab over, src/tgt vocab size: {len(src_idx2w)}, {len(tgt_w2idx)}')
 
     # pretrained path
     pretrained = None
@@ -432,6 +388,14 @@ def main(**kwargs):
                    utter_n_layer=kwargs['utter_n_layer'], 
                    dropout=kwargs['dropout'],
                    pretrained=pretrained)
+    elif kwargs['model'] == 'HRAN-ablation':
+        net = HRAN_ablation(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
+                   kwargs['utter_hidden'], kwargs['context_hidden'],
+                   kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                   pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                   utter_n_layer=kwargs['utter_n_layer'], 
+                   dropout=kwargs['dropout'],
+                   pretrained=pretrained)
     elif kwargs['model'] == 'DSHRED':
         net = DSHRED(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
                      kwargs['utter_hidden'], kwargs['context_hidden'],
@@ -451,9 +415,11 @@ def main(**kwargs):
     elif kwargs['model'] == 'Transformer':
         net = Transformer(len(src_w2idx), len(tgt_w2idx), kwargs['d_model'], 
                           kwargs['nhead'], kwargs['num_encoder_layers'], 
-                          kwargs['num_decoder_layers'], kwargs['dim_feedforward'], 
-                          kwargs['dropout'], sos=tgt_w2idx['<sos>'], 
-                          pad=tgt_w2idx['<pad>'])
+                          kwargs['dim_feedforward'], 
+                          utter_n_layer=kwargs['utter_n_layer'],
+                          dropout=kwargs['dropout'], sos=tgt_w2idx['<sos>'], 
+                          pad=tgt_w2idx['<pad>'], teach_force=kwargs['teach_force'],
+                          position_embed_size=kwargs['position_embed_size'])
     elif kwargs['model'] == 'MReCoSa':
         net = MReCoSa(len(src_w2idx), 512, len(tgt_w2idx), 512, 512,
                       teach_force=kwargs['teach_force'], pad=tgt_w2idx['<pad>'],
@@ -503,23 +469,15 @@ def main(**kwargs):
     print(net)
 
     print(f'[!] Parameters size: {sum(x.numel() for x in net.parameters())}')
-
-    # prepare optimizer
-    if kwargs['transformer_decode']:
-        print(f'[!] Optimizer Adam with weight decay')
-        optimizer = ScheduledOptim(optim.Adam(net.parameters(), 
-                                              betas=(0.9, 0.98), eps=1e-9),
-                                   kwargs['d_model'], kwargs['warmup_step'])
-    else:
-        print(f'[!] Optimizer Adam')
-        optimizer = optim.Adam(net.parameters(), lr=kwargs['lr'])
-        scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 
-                                                   mode='min',
-                                                   factor=kwargs['lr_gamma'],
-                                                   patience=kwargs['patience'],
-                                                   verbose=True,
-                                                   cooldown=0,
-                                                   min_lr=kwargs['lr_mini'])
+    print(f'[!] Optimizer Adam')
+    optimizer = optim.Adam(net.parameters(), lr=kwargs['lr'])
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 
+                                               mode='min',
+                                               factor=kwargs['lr_gamma'],
+                                               patience=kwargs['patience'],
+                                               verbose=True,
+                                               cooldown=0,
+                                               min_lr=kwargs['lr_mini'])
     pbar = tqdm(range(1, kwargs['epochs'] + 1))
     training_loss, validation_loss = [], []
     min_loss = np.inf
@@ -542,79 +500,68 @@ def main(**kwargs):
                                                   kwargs['src_vocab'], 
                                                   kwargs['tgt_vocab'],
                                                   kwargs['batch_size'], 
-                                                  kwargs['maxlen'])
+                                                  kwargs['maxlen'],
+                                                  kwargs['tgt_maxlen'])
                 test_iter = get_batch_data_graph(kwargs['src_test'], 
                                                  kwargs['tgt_test'], 
                                                  kwargs['test_graph'],
                                                  kwargs['src_vocab'], 
                                                  kwargs['tgt_vocab'],
                                                  kwargs['batch_size'], 
-                                                 kwargs['maxlen'])
+                                                 kwargs['maxlen'],
+                                                 kwargs['tgt_maxlen'])
                 dev_iter = get_batch_data_graph(kwargs['src_dev'], 
                                                 kwargs['tgt_dev'], 
                                                 kwargs['dev_graph'],
                                                 kwargs['src_vocab'], 
                                                 kwargs['tgt_vocab'],
                                                 kwargs['batch_size'], 
-                                                kwargs['maxlen'])
+                                                kwargs['maxlen'],
+                                                kwargs['tgt_maxlen'])
             else:
                 train_iter = get_batch_data(kwargs['src_train'], 
                                             kwargs['tgt_train'],
                                             kwargs['src_vocab'], 
                                             kwargs['tgt_vocab'], 
                                             kwargs['batch_size'], 
-                                            kwargs['maxlen'])
+                                            kwargs['maxlen'],
+                                            kwargs['tgt_maxlen'])
                 test_iter = get_batch_data(kwargs['src_test'], 
                                            kwargs['tgt_test'],
                                            kwargs['src_vocab'], 
                                            kwargs['tgt_vocab'],
                                            kwargs['batch_size'],
-                                           kwargs['maxlen'])
+                                           kwargs['maxlen'],
+                                           kwargs['tgt_maxlen'])
                 dev_iter = get_batch_data(kwargs['src_dev'], 
                                           kwargs['tgt_dev'],
                                           kwargs['src_vocab'], 
                                           kwargs['tgt_vocab'],
                                           kwargs['batch_size'],
-                                          kwargs['maxlen'])
+                                          kwargs['maxlen'],
+                                          kwargs['tgt_maxlen'])
         else:
-            if kwargs['transformer_decode'] == 0:
-                train_iter = get_batch_data_flatten(kwargs['src_train'],
+            train_iter = get_batch_data_flatten(kwargs['src_train'],
                                                     kwargs['tgt_train'],
                                                     kwargs['src_vocab'],
                                                     kwargs['tgt_vocab'],
                                                     kwargs['batch_size'],
-                                                    kwargs['maxlen'])
-                test_iter = get_batch_data_flatten(kwargs['src_test'], 
+                                                    kwargs['maxlen'],
+                                                    kwargs['tgt_maxlen'])
+            test_iter = get_batch_data_flatten(kwargs['src_test'], 
                                                    kwargs['tgt_test'],
                                                    kwargs['src_vocab'], 
                                                    kwargs['tgt_vocab'],
                                                    kwargs['batch_size'], 
-                                                   kwargs['maxlen'])
-                dev_iter = get_batch_data_flatten(kwargs['src_dev'], 
+                                                   kwargs['maxlen'],
+                                                   kwargs['tgt_maxlen'])
+            dev_iter = get_batch_data_flatten(kwargs['src_dev'], 
                                                   kwargs['tgt_dev'],
                                                   kwargs['src_vocab'],
                                                   kwargs['tgt_vocab'],
                                                   kwargs['batch_size'],
-                                                  kwargs['maxlen'])
-            else:
-                train_iter = get_batch_data_flatten_tf(kwargs['src_train'],
-                                                    kwargs['tgt_train'],
-                                                    kwargs['src_vocab'],
-                                                    kwargs['tgt_vocab'],
-                                                    kwargs['batch_size'],
-                                                    kwargs['maxlen'])
-                test_iter = get_batch_data_flatten_tf(kwargs['src_test'], 
-                                                   kwargs['tgt_test'],
-                                                   kwargs['src_vocab'], 
-                                                   kwargs['tgt_vocab'],
-                                                   kwargs['batch_size'], 
-                                                   kwargs['maxlen'])
-                dev_iter = get_batch_data_flatten_tf(kwargs['src_dev'], 
-                                                  kwargs['tgt_dev'],
-                                                  kwargs['src_vocab'],
-                                                  kwargs['tgt_vocab'],
-                                                  kwargs['batch_size'],
-                                                  kwargs['maxlen'])
+                                                  kwargs['maxlen'],
+                                                  kwargs['tgt_maxlen'])
 
                 
         # ========== train session begin ==========
@@ -636,17 +583,11 @@ def main(**kwargs):
         # and write the lr schedule, and teach force
         writer.add_scalar(f'{writer_str}-Loss/train', train_loss, epoch)
         writer.add_scalar(f'{writer_str}-Loss/dev', val_loss, epoch)
-        if kwargs['transformer_decode']:
-            writer.add_scalar(f'{writer_str}-Loss/lr',
-                              optimizer._optimizer.state_dict()['param_groups'][0]['lr'],
-                              epoch)
-            writer.add_scalar(f'{writer_str}-Loss/teach', 1, epoch)
-        else:
-            writer.add_scalar(f'{writer_str}-Loss/lr', 
-                              optimizer.state_dict()['param_groups'][0]['lr'], 
-                              epoch)
-            writer.add_scalar(f'{writer_str}-Loss/teach', net.teach_force,
-                              epoch)
+        writer.add_scalar(f'{writer_str}-Loss/lr', 
+                          optimizer.state_dict()['param_groups'][0]['lr'], 
+                          epoch)
+        writer.add_scalar(f'{writer_str}-Loss/teach', net.teach_force,
+                          epoch)
         
         if not best_val_loss or val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -655,10 +596,7 @@ def main(**kwargs):
             patience += 1
                           
         # checkpoint state
-        if kwargs['transformer_decode']:
-            optim_state = optimizer._optimizer.state_dict()
-        else:
-            optim_state = optimizer.state_dict()
+        optim_state = optimizer.state_dict()
         state = {'net': net.state_dict(), 'opt': optim_state, 
                  'epoch': epoch, 'patience': patience}
         torch.save(state, 
@@ -736,6 +674,8 @@ if __name__ == "__main__":
     parser.add_argument('--tgt_vocab', type=str, default=None, help='tgt vocabulary')
     parser.add_argument('--maxlen', type=int, default=50, 
                         help='the maxlen of the utterance')
+    parser.add_argument('--tgt_maxlen', type=int, default=50, 
+                        help='the maxlen of the responses')
     parser.add_argument('--utter_n_layer', type=int, default=1, 
                         help='layers of the utterance encoder')
     parser.add_argument('--debug', dest='debug', action='store_true')

@@ -216,9 +216,24 @@ def generate_bert_embedding(vocab, path):
     
     
 # load data function for hierarchical models
-def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
+def load_data(src, tgt, src_vocab, tgt_vocab, maxlen, tgt_maxlen):
     # convert dataset into src: [datasize, turns, lengths]
     # convert dataset into tgt: [datasize, lengths]
+    # check the file, exist -> ignore
+    # move it to the file `data_loader.py`
+    src_prepath = os.path.splitext(src)[0] + '-hier.pkl'
+    tgt_prepath = os.path.splitext(tgt)[0] + '-hier.pkl'
+    if os.path.exists(src_prepath) and os.path.exists(tgt_prepath):
+        print(f'[!] preprocessed file {src_prepath} exist, load directly')
+        print(f'[!] preprocessed file {tgt_prepath} exist, load directly')
+        with open(src_prepath, 'rb') as f:
+            src_dataset, src_user = pickle.load(f)
+        with open(tgt_prepath, 'rb') as f:
+            tgt_dataset, tgt_user = pickle.load(f)
+        return src_dataset, src_user, tgt_dataset, tgt_user
+    else:
+        print(f'[!] cannot find the preprocessed file')
+    
     src_w2idx, src_idx2w = load_pickle(src_vocab)
     tgt_w2idx, tgt_idx2w = load_pickle(tgt_vocab)
     src_user, tgt_user = [], []
@@ -253,10 +268,17 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen):
             elif '<user1>' in line: user_c, user_cr = '<user1>', 'user1'
             line = line.replace(user_c, user_cr).strip()
             line = [tgt_w2idx['<sos>']] + [tgt_w2idx.get(w, tgt_w2idx['<unk>']) for w in nltk.word_tokenize(line)] + [tgt_w2idx['<eos>']]
-            if len(line) > maxlen:
-                line = line[:maxlen] + [tgt_w2idx['<eos>']]
+            if len(line) > tgt_maxlen:
+                line = line[:tgt_maxlen] + [tgt_w2idx['<eos>']]
             tgt_dataset.append(line)
             tgt_user.append(user_vocab.index(user_cr))
+            
+    print(f'[!] load dataset over, write into file {src_prepath} and {tgt_prepath}')
+    
+    with open(src_prepath, 'wb') as f:
+        pickle.dump((src_dataset, src_user), f)
+    with open(tgt_prepath, 'wb') as f:
+        pickle.dump((tgt_dataset, tgt_user), f)
  
     # src_user: [datasize, turn], tgt_user: [datasize]
     return src_dataset, src_user, tgt_dataset, tgt_user
@@ -669,7 +691,9 @@ def analyse_coverage_word_embedding(vocab, lang='en'):
     
 def analyse_dataset(dataset, split):
     # analyse the dataset setting, adjust the padding lengths
-    print(f'[!] the metadata of {dataset}-{split}')
+    print(f'==========================================')
+    print(f'[!] the metadata of {dataset}-src-{split}')
+    words = set([])
     with open(f'./data/{dataset}/src-{split}.txt') as f:
         turn, tcounter = [], 0
         i, j, icounter, jcounter = 0, 0, 0, 0
@@ -677,6 +701,7 @@ def analyse_dataset(dataset, split):
         for line in f.readlines():
             line = line.strip()
             j += len(line.split())
+            words |= set(line.split())
             jcounter += 1
             jmin = min(jmin, len(line.split()))
             jmax = max(jmax, len(line.split()))
@@ -692,6 +717,22 @@ def analyse_dataset(dataset, split):
     print(f'[!] length of the sentenes(avg, max, min) for no-hierarchical: {round(j/jcounter, 4)}/{jmax}/{jmin}')
     max_t, min_t, avg_t = max(turn), min(turn), np.mean(turn)
     print(f'[!] turn length(max/min/avg): {round(max_t, 4)}/{round(min_t, 4)}/{round(avg_t, 4)}')
+    
+    # responses 
+    print(f'[!] the metadata of {dataset}-tgt-{split}')
+    with open(f'./data/{dataset}/tgt-{split}.txt') as f:
+        i, j, icounter, jcounter = 0, 0, 0, 0
+        imax, imin, jmax, jmin = -10000, 10000, -10000, 10000
+        for line in f.readlines():
+            line = line.strip()
+            j += len(line.split())
+            jcounter += 1
+            jmin = min(jmin, len(line.split()))
+            jmax = max(jmax, len(line.split()))
+    print(f'[!] length of the responses(avg, max, min): {round(j/jcounter, 4)}/{jmax}/{jmin}')
+    
+    print(f'[!] total words: {len(words)}')
+    print(f'==========================================')
                 
     
 # ========== function for transformers (GPT2) ==========

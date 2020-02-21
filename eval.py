@@ -4,6 +4,7 @@
 
 from metric.metric import * 
 import argparse
+import gensim
 import pickle
 from tqdm import tqdm
 
@@ -17,7 +18,7 @@ if __name__ == "__main__":
     with open(args.file) as f:
         ref, tgt = [], []
         for idx, line in enumerate(f.readlines()):
-            line = line.lower()
+            # line = line.lower()
             if idx % 4 == 1:
                 line = line.replace("user1", "").replace("user0", "").replace("- ref: ", "").replace('<sos>', '').replace('<eos>', '').strip()
                 ref.append(line.split())
@@ -56,15 +57,22 @@ if __name__ == "__main__":
     
     # Embedding-based metric: Embedding Average (EA), Vector Extrema (VX), Greedy Matching (GM)
     # load the dict
-    with open('./data/glove_embedding.pkl', 'rb') as f:
-        dic = pickle.load(f)
+    dic = gensim.models.KeyedVectors.load_word2vec_format('./data/GoogleNews-vectors-negative300.bin', binary=True)
+    print('[!] load the GoogleNews 300 word2vector by gensim over')
     ea_sum, vx_sum, gm_sum, counterp = 0, 0, 0, 0
+    no_save = 0
     for rr, cc in tqdm(list(zip(ref, tgt))):
-        ea_sum += cal_embedding_average(rr, cc, dic)
-        vx_sum += cal_vector_extrema(rr, cc, dic)
+        ea_sum_ = cal_embedding_average(rr, cc, dic)
+        vx_sum_ = cal_vector_extrema(rr, cc, dic)
         # gm_sum += cal_greedy_matching(rr, cc, dic)
-        counterp += 1
+        if ea_sum_ != 1 and vx_sum_ != 1:
+            ea_sum += ea_sum_
+            vx_sum += vx_sum_
+            counterp += 1
+        else:
+            no_save += 1
 
+    print(f'[!] It should be noted that UNK ratio for embedding-based: {round(no_save / (no_save + counterp), 4)}')
     print(f'Model {args.model} Result')
     print(f'BLEU-1: {round(bleu1_sum, 4)}')
     print(f'BLEU-2: {round(bleu2_sum, 4)}')

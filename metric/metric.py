@@ -11,6 +11,7 @@ import math
 from rouge import Rouge
 import os, re
 import ipdb
+import numpy as np
 
 
 # BLEU of NLTK
@@ -94,15 +95,14 @@ def cal_BERTScore(refer, candidate):
 # ========== Our own embedding-based metric ========== #
 def cal_vector_extrema(x, y, dic):
     # x and y are the list of the words
+    # dic is the gensim model which holds 300 the google news word2ved model
     def vecterize(p):
         vectors = []
         for w in p:
             if w in dic:
-                vectors.append(dic[w])
-            else:
-                vectors.append(dic['<unk>'])
+                vectors.append(dic[w.lower()])
         if not vectors:
-            vectors.append(dic['<unk>'])
+            vectors.append(np.random.randn(300))
         return np.stack(vectors)
     x = vecterize(x)
     y = vecterize(y)
@@ -123,11 +123,9 @@ def cal_embedding_average(x, y, dic):
         vectors = []
         for w in p:
             if w in dic:
-                vectors.append(dic[w])
-            else:
-                vectors.append(dic['<unk>'])
+                vectors.append(dic[w.lower()])
         if not vectors:
-            vectors.append(dic['<unk>'])
+            vectors.append(np.random.randn(300))
         return np.stack(vectors)
     x = vecterize(x)
     y = vecterize(y)
@@ -146,11 +144,20 @@ def cal_embedding_average(x, y, dic):
     vec_y = vec_y / math.sqrt(sum(np.square(vec_y)))
     
     assert len(vec_x) == len(vec_y), "len(vec_x) != len(vec_y)"
+    
     zero_list = np.array([0 for _ in range(len(vec_x))])
     if vec_x.all() == zero_list.all() or vec_y.all() == zero_list.all():
         return float(1) if vec_x.all() == vec_y.all() else float(0)
-    res = np.array([[vec_x[i] * vec_y[i], vec_x[i] * vec_x[i], vec_y[i] * vec_y[i]] for i in range(len(vec_x))])
-    cos = sum(res[:, 0]) / (np.sqrt(sum(res[:, 1])) * np.sqrt(sum(res[:, 2])))
+    
+    vec_x = np.mat(vec_x)
+    vec_y = np.mat(vec_y)
+    num = float(vec_x * vec_y.T)
+    denom = np.linalg.norm(vec_x) * np.linalg.norm(vec_y)
+    cos = num / denom
+    
+    # res = np.array([[vec_x[i] * vec_y[i], vec_x[i] * vec_x[i], vec_y[i] * vec_y[i]] for i in range(len(vec_x))])
+    # cos = sum(res[:, 0]) / (np.sqrt(sum(res[:, 1])) * np.sqrt(sum(res[:, 2])))
+    
     return cos
 
 
@@ -160,11 +167,9 @@ def cal_greedy_matching(x, y, dic):
         vectors = []
         for w in p:
             if w in dic:
-                vectors.append(dic[w])
-            else:
-                vectors.append(dic['<unk>'])
+                vectors.append(dic[w.lower()])
         if not vectors:
-            vectors.append(dic['<unk>'])
+            vectors.append(np.random.randn(300))
         return np.stack(vectors)
     x = vecterize(x)
     y = vecterize(y)
