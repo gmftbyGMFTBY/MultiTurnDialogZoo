@@ -23,6 +23,7 @@ from utils import *
 from data_loader import *
 from metric.metric import *
 from model.seq2seq_attention import Seq2Seq
+from model.seq2seq_multi_head_attention import Seq2Seq_Multi_Head
 from model.seq2seq_transformer import Transformer
 from model.HRED import HRED
 from model.VHRED import VHRED
@@ -434,6 +435,17 @@ def main(**kwargs):
                       dropout=kwargs['dropout'], 
                       utter_n_layer=kwargs['utter_n_layer'], 
                       pretrained=pretrained)
+    elif kwargs['model'] == 'Seq2Seq_MHA':
+        net = Seq2Seq_Multi_Head(len(src_w2idx), kwargs['embed_size'], 
+                                 len(tgt_w2idx), kwargs['utter_hidden' ], 
+                                 kwargs['decoder_hidden'],
+                                 teach_force=kwargs['teach_force'],
+                                 pad=tgt_w2idx['<pad>'], 
+                                 sos=tgt_w2idx['<sos>'],
+                                 dropout=kwargs['dropout'], 
+                                 utter_n_layer=kwargs['utter_n_layer'], 
+                                 pretrained=pretrained,
+                                 nhead=kwargs['nhead'])
     elif kwargs['model'] == 'MTGCN':
         net = MTGCN(len(src_w2idx), len(tgt_w2idx), kwargs['embed_size'], 
                     kwargs['utter_hidden'], kwargs['context_hidden'],
@@ -721,9 +733,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # show the parameters
+    # show the parameters and write into file
     print('[!] Parameters:')
     print(args)
+    with open(f'./processed/{args.dataset}/{args.model}/metadata.txt', 'w') as f:
+        print(args, file=f)
 
     # set random seed
     random.seed(args.seed)

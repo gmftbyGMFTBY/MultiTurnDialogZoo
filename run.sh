@@ -43,6 +43,9 @@ elif [ $model = 'DSHRED' ]; then
 elif [ $model = 'Seq2Seq' ]; then
     hierarchical=0
     graph=0
+elif [ $model = 'Seq2Seq_MHA' ]; then
+    hierarchical=0
+    graph=0
 elif [ $model = 'Transformer' ]; then
     hierarchical=0
     graph=0
@@ -77,11 +80,11 @@ if [ $hierarchical = 1 ]; then
 elif [ $transformer_decode = 1 ]; then
     maxlen=200
     tgtmaxlen=25
-    batch_size=16
+    batch_size=64
 else
     maxlen=150
-    tgtmaxlen=50
-    batch_size=64
+    tgtmaxlen=25
+    batch_size=32
 fi
 
 # ========== Ready Perfectly ========== #
@@ -225,15 +228,25 @@ elif [ $mode = 'train' ]; then
     rm -rf ./ckpt/$dataset/$model
     mkdir -p ./ckpt/$dataset/$model
     
+    # create the training folder
     if [ ! -d "./processed/$dataset/$model" ]; then
         mkdir -p ./processed/$dataset/$model
     else
         echo "[!] ./processed/$dataset/$model: already exists"
     fi
+    
+    # delete ppl.txt
     if [ ! -f "./processed/$dataset/$model/ppl.txt" ]; then
         echo "[!] ./processed/$dataset/$model/ppl.txt doesn't exist"
     else
         rm ./processed/$dataset/$model/ppl.txt
+    fi
+    
+    # delete metadata.txt
+    if [ ! -f "./processed/$dataset/$model/metadata.txt" ]; then
+        echo "[!] ./processed/$dataset/$model/metadata.txt doesn't exist"
+    else
+        rm ./processed/$dataset/$model/metadata.txt
     fi
     
     cp -r tblogs/$dataset/ ./bak/tblogs
@@ -254,11 +267,11 @@ elif [ $mode = 'train' ]; then
         # other repo set the 0.1 as the dropout ratio, remain it
         dropout=0.3
         lr=1e-4
-        lr_mini=1e-4
+        lr_mini=1e-6
     else
         dropout=0.3
         lr=1e-4
-        lr_mini=1e-4
+        lr_mini=1e-6
     fi
     
     echo "[!] back up finished"
@@ -282,9 +295,9 @@ elif [ $mode = 'train' ]; then
         --dev_graph ./processed/$dataset/dev-graph.pkl \
         --pred ./processed/${dataset}/${model}/pred.txt \
         --min_threshold 0 \
-        --max_threshold 200 \
+        --max_threshold 100 \
         --seed 30 \
-        --epochs 200 \
+        --epochs 100 \
         --lr $lr \
         --batch_size $batch_size \
         --model $model \
@@ -299,7 +312,7 @@ elif [ $mode = 'train' ]; then
         --grad_clip 3.0 \
         --dropout $dropout \
         --d_model 512 \
-        --nhead 8 \
+        --nhead 4 \
         --num_encoder_layers 8 \
         --num_decoder_layers 8 \
         --dim_feedforward 2048 \

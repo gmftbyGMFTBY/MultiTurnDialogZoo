@@ -324,7 +324,7 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
     
     For dataset DSTC7, [sequential edges, last_utterence edges, user edges, self-loop]
     
-    For dataset Dailydialog, [sequential edges, last utterence edges, user edges, self-loop]
+    For dataset Dailydialog, [sequential edges, bidir last utterence edges]
     
     For personachat dataset, [last utterence edges, correlation edges (threshold=0.8)]
     
@@ -339,11 +339,11 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
     # sequential edges, (turn_len - 1)
     turn_len = len(turns)
     se, ue, pe = 0, 0, 0
-    '''
     for i in range(turn_len - 1):
         edges[(i, i + 1)] = [s_w]
         se += 1
-    
+        
+    '''
     # user edge
     for i in range(turn_len):
         for j in range(turn_len):
@@ -380,8 +380,12 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
         else:
             # edges[(i, query)] = [u_w]
             edges[(query, i)] = [u_w]
+        if edges.get((i, query), None):
+            edges[(i, query)].append(u_w)
+        else:
+            edges[(i, query)] = [u_w]
            
-    
+    '''
     # distance
     utterances = []
     for utterance in turns:
@@ -424,6 +428,7 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
                     else:
                         edges[(i, j)] = [weight * u_w]
                     pe += 1
+    '''
     
 
     # clean the edges
@@ -857,6 +862,7 @@ if __name__ == "__main__":
     parser.add_argument('--self-loop', dest='self_loop', action='store_true')
     parser.add_argument('--no-self-loop', dest='self_loop', action='store_false')
     parser.add_argument('--split', type=str, default='train')
+    parser.add_argument('--tgt_maxlen', type=int, default=30)
     
     args = parser.parse_args()
 
@@ -871,7 +877,7 @@ if __name__ == "__main__":
         generate_bert_embedding(vocab, args.pretrained)
     elif mode == 'graph':
         # save the preprocessed data for generating graph
-        src_dataset, src_user, tgt_dataset, tgt_user = load_data(args.src, args.tgt, args.src_vocab, args.tgt_vocab, args.maxlen)
+        src_dataset, src_user, tgt_dataset, tgt_user = load_data(args.src, args.tgt, args.src_vocab, args.tgt_vocab, args.maxlen, args.tgt_maxlen)
         print(f'[!] load the cf mode dataset, prepare for preprocessing')
         ppdataset = idx2sent(src_dataset, args.src_vocab)
         print(f'[!] begin to create the graph')

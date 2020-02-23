@@ -52,6 +52,36 @@ class Attention(nn.Module):
         energy = torch.bmm(v, energy)    # [batch, 1, timestep]
         return energy.squeeze(1)    # [batch, timestep]
     
+    
+class Multi_head_attention(nn.Module):
+    
+    '''
+    Multi head attention for RNN, Layernorm and residual connection are used.
+    By the way, Transformer sucks.
+    '''
+    
+    def __init__(self, hidden_size, nhead=4):
+        super(Multi_head_attention, self).__init__()
+        self.nhead = nhead
+        self.hidden_size = hidden_size
+        self.multi_head_attention = nn.ModuleList([Attention(hidden_size) for _ in range(nhead)])
+        self.ffn = nn.Linear(self.nhead * self.hidden_size, self.hidden_size)
+        
+    def forward(self, hidden, encoder_outputs):
+        # hidden: [batch, hidden]
+        # encoder_outputs: [seq, batch, hidden]
+        # return: context [1, batch, seq]
+        context_collector = []    # [N, hidden, batch]
+        for attention_head in self.multi_head_attention:
+            attn_weights = attention_head(hidden, encoder_outputs)    # [batch, 1 seq]
+            context = attn_weights.bmm(encoder_outputs.transpose(0, 1))    # [batch, 1, hidden]
+            context = context.squeeze(1).transpose(0, 1)    # [hidden, batch]
+            context_collector.append(context)
+        # [batch, n*hidden]
+        context = torch.stack(context_collector).view(-1, context.shape[-1]).transpose(0, 1)
+        context = torch.tanh(self.ffn(context)).unsqueeze(0)    # [1, batch, hidden]
+        return context
+    
 
 class WSeq_attention(nn.Module):
 

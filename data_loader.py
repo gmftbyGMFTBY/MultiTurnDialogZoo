@@ -14,59 +14,6 @@ import random
 import nltk
 import os
 import pickle
-
-
-# ========== Remember to run the preprocess function for transformers ==========
-'''
-class GPT2Dataset(Dataset):
-
-    def __init__(self, data_list):
-        self.data_list = data_list
-
-    def __getitem__(self, index):
-        input_ids = self.data_list[index].strip()
-        input_ids = [int(token_id) for token_id in input_ids.split()]
-        return input_ids
-
-    def __len__(self):
-        return len(self.data_list)
-    
-
-def collate_fn(batch):
-    """
-    padding for transformers model
-    """
-    pad_id = 0    # for bert tokenizer, the pad id is 0
-    input_ids = []
-    btc_size = len(batch)
-    max_input_len = 0
-    for btc_idx in range(btc_size):
-        if max_input_len < len(batch[btc_idx]):
-            max_input_len = len(batch[btc_idx])
-    for btc_idx in range(btc_size):
-        input_len = len(batch[btc_idx])
-        input_ids.append(batch[btc_idx])
-        input_ids[btc_idx].extend([pad_id] * (max_input_len - input_len))
-    b = torch.tensor(input_ids, dtype=torch.long)
-    if torch.cuda.is_available():
-        b = b.cuda()
-    return b
-    
-    
-def get_batch_data_transformer(path, batch_size):
-    # read the file
-    with open(path) as f:
-        data_list = []
-        for line in f.readlines():
-            line = line.strip()
-            data_list.append(line)
-    # create the dataset
-    dataset = GPT2Dataset(data_list)
-    dataloader = DataLoader(dataset, batch_size=batch_size, 
-                            shuffle=True, collate_fn=collate_fn)
-    return dataset, dataloader
-'''
-# ========== ==========
     
 
 def load_data_flatten(src, tgt, src_vocab, tgt_vocab, maxlen, tgt_maxlen):
