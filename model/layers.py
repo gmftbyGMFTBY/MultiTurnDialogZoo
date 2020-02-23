@@ -82,6 +82,38 @@ class Multi_head_attention(nn.Module):
         context = torch.tanh(self.ffn(context)).unsqueeze(0)    # [1, batch, hidden]
         return context
     
+    
+class Multi_head_attention_trs(nn.Module):
+    
+    '''
+    make sure the hidden_size can be divisible by nhead
+    Recommand: 512, 8
+    '''
+    
+    def __init__(self, hidden_size, nhead=8, dropout=0.3):
+        super(Multi_head_attention_trs, self).__init__()
+        self.nhead = nhead
+        self.hidden_size = hidden_size
+        
+        if hidden_size % nhead != 0:
+            raise Exception(f'hidden_size must be divisble by nhead, but got {hidden_size}/{nhead}.')
+        
+        self.multi_head_attention = nn.MultiheadAttention(hidden_size, nhead)
+        self.ffn = nn.Linear(self.hidden_size, self.hidden_size)
+        # self.drop = nn.Dropout(p=dropout)
+        
+    def forward(self, hidden, encoder_outputs):
+        # hidden: [batch, hidden]
+        # encoder_outputs: [seq, batch, hidden]
+        # return: context [1, batch, seq]
+        query = hidden.unsqueeze(0)    # [1, batch, hidden]
+        # context: [1, batch, hidden]
+        context, _ = self.multi_head_attention(query, 
+                                               encoder_outputs, 
+                                               encoder_outputs)
+        context = torch.tanh(self.ffn(context))    # [1, batch, hidden]
+        return context
+
 
 class WSeq_attention(nn.Module):
 

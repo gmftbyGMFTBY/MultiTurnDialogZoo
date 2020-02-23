@@ -83,7 +83,7 @@ elif [ $transformer_decode = 1 ]; then
     batch_size=64
 else
     maxlen=150
-    tgtmaxlen=25
+    tgtmaxlen=30
     batch_size=32
 fi
 

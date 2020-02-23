@@ -537,7 +537,7 @@ def analyse_graph(path, hops=3):
     avg_graph = np.mean(sum_graph)
     avg_in = np.mean(sum_in)
     avg_out = np.mean(sum_out)
-    print(f'[!] the avg graph numbers: {round(avg_graph, 4)}')
+    print(f'[!] the avg edges numbers in graph: {round(avg_graph, 4)}')
     print(f'[!] the avg in-degree numbers: {round(avg_in, 4)}')
     print(f'[!] the avg out_degree numbers: {round(avg_out, 4)}')
     

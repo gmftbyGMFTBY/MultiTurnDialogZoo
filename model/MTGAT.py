@@ -92,23 +92,14 @@ class GATContext(nn.Module):
         size = inpt_size + user_embed_size + posemb_size
         self.threshold = threshold
         
-        # GatedGCN
-        # self.kernel_rnn = nn.GRUCell(size, size)
-        # self.conv1 = My_GatedGCN(size, inpt_size, self.kernel_rnn)
-        # self.conv2 = My_GatedGCN(size, inpt_size, self.kernel_rnn)
-        # self.conv3 = My_GatedGCN(size, inpt_size, self.kernel_rnn)
-        # self.conv1 = GCNConv(size, inpt_size)
-        # self.conv2 = GCNConv(size, inpt_size)
-        # self.conv3 = GCNConv(size, inpt_size)
-        # self.bn1 = nn.BatchNorm1d(num_features=inpt_size)
-        # self.bn2 = nn.BatchNorm1d(num_features=inpt_size)
-        # self.bn3 = nn.BatchNorm1d(num_features=inpt_size)
+        # GraphConv
         self.conv1 = GATConv(size, inpt_size, heads=head, 
                              dropout=dropout)
         self.conv2 = GATConv(size, inpt_size, heads=head,
                              dropout=dropout)
         self.conv3 = GATConv(size, inpt_size, heads=head,
                              dropout=dropout)
+        self.layer_norm = nn.LayerNorm(inpt_size)
         self.compress = nn.Linear(head * inpt_size, inpt_size)
 
         # rnn for background
@@ -203,8 +194,10 @@ class GATContext(nn.Module):
         x3 = torch.tanh(self.compress(x3))
 
         # residual for overcoming over-smoothing, [nodes, inpt_size]
+        # residual -> dropout -> layernorm
         x = x1 + x2 + x3
         x = self.drop(torch.tanh(x))
+        x = self.layer_norm(x)
 
         # [nodes/turn_len, output_size]
         # take apart to get the mini-batch
