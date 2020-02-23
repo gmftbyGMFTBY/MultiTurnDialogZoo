@@ -99,7 +99,9 @@ class GATContext(nn.Module):
                              dropout=dropout)
         self.conv3 = GATConv(size, inpt_size, heads=head,
                              dropout=dropout)
-        self.layer_norm = nn.LayerNorm(inpt_size)
+        self.layer_norm1 = nn.LayerNorm(inpt_size)
+        self.layer_norm2 = nn.LayerNorm(inpt_size)
+        self.layer_norm3 = nn.LayerNorm(inpt_size)
         self.compress = nn.Linear(head * inpt_size, inpt_size)
 
         # rnn for background
@@ -184,20 +186,22 @@ class GATContext(nn.Module):
         # x1 = F.relu(self.bn1(self.conv1(x, edge_index, edge_weight=weights)))
         x1 = torch.tanh(self.conv1(x, edge_index))
         x1 = torch.tanh(self.compress(x1))
+        x1 = self.layer_norm1(x1)
         x1_ = torch.cat([x1, pos, ub], dim=1)
         # x2 = F.relu(self.bn2(self.conv2(x1_, edge_index, edge_weight=weights)))
         x2 = torch.tanh(self.conv2(x1_, edge_index))
         x2 = torch.tanh(self.compress(x2))
+        x2 = self.layer_norm2(x2)
         x2_ = torch.cat([x2, pos, ub], dim=1)
         # x3 = F.relu(self.bn3(self.conv3(x2_, edge_index, edge_weight=weights)))
         x3 = torch.tanh(self.conv3(x2_, edge_index))
         x3 = torch.tanh(self.compress(x3))
+        x3 = self.layer_norm3(x3)
 
         # residual for overcoming over-smoothing, [nodes, inpt_size]
         # residual -> dropout -> layernorm
         x = x1 + x2 + x3
         x = self.drop(torch.tanh(x))
-        x = self.layer_norm(x)
 
         # [nodes/turn_len, output_size]
         # take apart to get the mini-batch
