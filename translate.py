@@ -43,90 +43,149 @@ def translate(**kwargs):
             test_iter = get_batch_data_graph(kwargs['src_test'], kwargs['tgt_test'],
                                              kwargs['test_graph'], kwargs['src_vocab'],
                                              kwargs['tgt_vocab'], kwargs['batch_size'],
-                                             kwargs['maxlen'], plus=kwargs["plus"])
+                                             kwargs['maxlen'], kwargs["tgt_maxlen"])
         else:
             test_iter = get_batch_data(kwargs['src_test'], kwargs['tgt_test'],
                                        kwargs['src_vocab'], kwargs['tgt_vocab'],
                                        kwargs['batch_size'], kwargs['maxlen'],
-                                       plus=kwargs["plus"])
+                                       kwargs["tgt_maxlen"])
     else:
         test_iter = get_batch_data_flatten(kwargs['src_test'], kwargs['tgt_test'],
                                            kwargs['src_vocab'], kwargs['tgt_vocab'],
-                                           kwargs['batch_size'], kwargs['maxlen'])
+                                           kwargs['batch_size'], kwargs['maxlen'], 
+                                           kwargs['tgt_maxlen'])
 
     # pretrained mode
-    if kwargs['pretrained'] == 'bert':
-        pretrained = f'./processed/{kwargs["dataset"]}/{kwargs["model"]}/'
-    else:
-        pretrained = None
+    pretrained = None
     
     # load net
     if kwargs['model'] == 'HRED':
         net = HRED(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
                    kwargs['utter_hidden'], kwargs['context_hidden'],
-                   kwargs['decoder_hidden'], pad=tgt_w2idx['<pad>'], 
-                   sos=tgt_w2idx['<sos>'], utter_n_layer=kwargs['utter_n_layer'], 
+                   kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                   pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                   utter_n_layer=kwargs['utter_n_layer'], 
+                   dropout=kwargs['dropout'],
+                   pretrained=pretrained)
+    elif kwargs['model'] == 'VHRED':
+        net = VHRED(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
+                    kwargs['utter_hidden'], kwargs['context_hidden'],
+                    kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                    pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                    utter_n_layer=kwargs['utter_n_layer'], 
+                    dropout=kwargs['dropout'],
+                    z_hidden=kwargs['z_hidden'],
+                    pretrained=pretrained)
+    elif kwargs['model'] == 'KgCVAE':
+        net = KgCVAE(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
+                    kwargs['utter_hidden'], kwargs['context_hidden'],
+                    kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                    pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'],
+                    eos=tgt_w2idx['<eos>'], unk=tgt_w2idx['<unk>'],
+                    utter_n_layer=kwargs['utter_n_layer'], 
+                    dropout=kwargs['dropout'],
+                    z_hidden=kwargs['z_hidden'],
+                    pretrained=pretrained)
+    elif kwargs['model'] == 'HRAN':
+        net = HRAN(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
+                   kwargs['utter_hidden'], kwargs['context_hidden'],
+                   kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                   pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                   utter_n_layer=kwargs['utter_n_layer'], 
+                   dropout=kwargs['dropout'],
+                   pretrained=pretrained)
+    elif kwargs['model'] == 'HRAN-ablation':
+        net = HRAN_ablation(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
+                   kwargs['utter_hidden'], kwargs['context_hidden'],
+                   kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                   pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                   utter_n_layer=kwargs['utter_n_layer'], 
+                   dropout=kwargs['dropout'],
                    pretrained=pretrained)
     elif kwargs['model'] == 'DSHRED':
         net = DSHRED(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
                      kwargs['utter_hidden'], kwargs['context_hidden'],
-                     kwargs['decoder_hidden'],
+                     kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
                      pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
                      utter_n_layer=kwargs['utter_n_layer'], 
+                     dropout=kwargs['dropout'],
                      pretrained=pretrained)
     elif kwargs['model'] == 'WSeq':
         net = WSeq(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
                    kwargs['utter_hidden'], kwargs['context_hidden'],
-                   kwargs['decoder_hidden'], pad=tgt_w2idx['<pad>'], 
-                   sos=tgt_w2idx['<sos>'], utter_n_layer=kwargs['utter_n_layer'],
+                   kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                   pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                   utter_n_layer=kwargs['utter_n_layer'], 
+                   dropout=kwargs['dropout'],
                    pretrained=pretrained)
-    elif kwargs['model'] == 'ReCoSa':
-        net = ReCoSa(len(src_w2idx), kwargs['d_model'], kwargs['d_model'], len(tgt_w2idx),
-                     n_layers=kwargs['utter_n_layer'], sos=tgt_w2idx['<sos>'],
-                     pad=tgt_w2idx['<pad>'], pretrained=pretrained)
-    elif kwargs['model'] == 'MReCoSa':
-        net = MReCoSa(len(src_w2idx), 512, len(tgt_w2idx), 
-                      512, 512, pad=tgt_w2idx["<pad>"], sos=tgt_w2idx['<sos>'], 
-                      utter_n_layer=kwargs['utter_n_layer'], pretrained=pretrained)
     elif kwargs['model'] == 'Transformer':
-        net = transformer(len(src_w2idx), len(tgt_w2idx), embed_size=kwargs['embed_size'],
-                          src_pad=src_w2idx['<pad>'], tgt_pad=tgt_w2idx['<pad>'], 
-                          tgt_sos=tgt_w2idx['<sos>'], pretrained=pretrained)
-    elif kwargs['model'] == 'Seq2Seq':
-        net = Seq2Seq(len(src_w2idx), kwargs['embed_size'], 
-                      len(tgt_w2idx), kwargs['utter_hidden'], 
-                      kwargs['decoder_hidden'], pad=tgt_w2idx['<pad>'], 
-                      sos=tgt_w2idx['<sos>'], utter_n_layer=kwargs['utter_n_layer'],
+        net = Transformer(len(src_w2idx), len(tgt_w2idx), kwargs['d_model'], 
+                          kwargs['nhead'], kwargs['num_encoder_layers'], 
+                          kwargs['dim_feedforward'], 
+                          utter_n_layer=kwargs['utter_n_layer'],
+                          dropout=kwargs['dropout'], sos=tgt_w2idx['<sos>'], 
+                          pad=tgt_w2idx['<pad>'], teach_force=kwargs['teach_force'],
+                          position_embed_size=kwargs['position_embed_size'])
+    elif kwargs['model'] == 'MReCoSa':
+        net = MReCoSa(len(src_w2idx), 512, len(tgt_w2idx), 512, 512,
+                      teach_force=kwargs['teach_force'], pad=tgt_w2idx['<pad>'],
+                      sos=tgt_w2idx['<sos>'], dropout=kwargs['dropout'],
+                      utter_n_layer=kwargs['utter_n_layer'], 
                       pretrained=pretrained)
+    elif kwargs['model'] == 'Seq2Seq':
+        net = Seq2Seq(len(src_w2idx), kwargs['embed_size'], len(tgt_w2idx), 
+                      kwargs['utter_hidden' ], 
+                      kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                      pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'],
+                      dropout=kwargs['dropout'], 
+                      utter_n_layer=kwargs['utter_n_layer'], 
+                      pretrained=pretrained)
+    elif kwargs['model'] == 'Seq2Seq_MHA':
+        net = Seq2Seq_Multi_Head(len(src_w2idx), kwargs['embed_size'], 
+                                 len(tgt_w2idx), kwargs['utter_hidden' ], 
+                                 kwargs['decoder_hidden'],
+                                 teach_force=kwargs['teach_force'],
+                                 pad=tgt_w2idx['<pad>'], 
+                                 sos=tgt_w2idx['<sos>'],
+                                 dropout=kwargs['dropout'], 
+                                 utter_n_layer=kwargs['utter_n_layer'], 
+                                 pretrained=pretrained,
+                                 nhead=kwargs['nhead'])
     elif kwargs['model'] == 'MTGCN':
-        net = MTGCN(len(src_w2idx), len(tgt_w2idx), kwargs['embed_size'],
+        net = MTGCN(len(src_w2idx), len(tgt_w2idx), kwargs['embed_size'], 
                     kwargs['utter_hidden'], kwargs['context_hidden'],
-                    kwargs['decoder_hidden'], kwargs['position_embed_size'],
-                    pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
-                    utter_n_layer=kwargs['utter_n_layer'], 
+                    kwargs['decoder_hidden'], kwargs['position_embed_size'], 
+                    teach_force=kwargs['teach_force'], pad=tgt_w2idx['<pad>'], 
+                    sos=tgt_w2idx['<sos>'], dropout=kwargs['dropout'],
+                    utter_n_layer=kwargs['utter_n_layer'],
                     context_threshold=kwargs['context_threshold'])
-    elif kwargs['model'] == 'GCNRNN':
-        net = GCNRNN(len(src_w2idx), len(tgt_w2idx), kwargs['embed_size'],
-                     kwargs['utter_hidden'], kwargs['context_hidden'],
-                     kwargs['decoder_hidden'], kwargs['position_embed_size'],
-                     pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
-                     utter_n_layer=kwargs['utter_n_layer'])
-    elif kwargs['model'] in ['GatedGCN', 'GatedGCN-no-role', 'GatedGCN-no-sequential', 'GatedGCN-no-correlation']:
-        net = GatedGCN(len(src_w2idx), len(tgt_w2idx), kwargs['embed_size'],
+    elif kwargs['model'] == 'MTGAT':
+        net = MTGAT(len(src_w2idx), len(tgt_w2idx), kwargs['embed_size'], 
                     kwargs['utter_hidden'], kwargs['context_hidden'],
-                    kwargs['decoder_hidden'], kwargs['position_embed_size'],
-                    pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
-                    utter_n_layer=kwargs['utter_n_layer'], 
+                    kwargs['decoder_hidden'], kwargs['position_embed_size'], 
+                    teach_force=kwargs['teach_force'], pad=tgt_w2idx['<pad>'], 
+                    sos=tgt_w2idx['<sos>'], dropout=kwargs['dropout'],
+                    utter_n_layer=kwargs['utter_n_layer'],
+                    context_threshold=kwargs['context_threshold'],
+                    heads=kwargs['gat_heads'])
+    elif kwargs['model'] == 'GatedGCN':
+        net = GatedGCN(len(src_w2idx), len(tgt_w2idx), kwargs['embed_size'], 
+                    kwargs['utter_hidden'], kwargs['context_hidden'],
+                    kwargs['decoder_hidden'], kwargs['position_embed_size'], 
+                    teach_force=kwargs['teach_force'], pad=tgt_w2idx['<pad>'], 
+                    sos=tgt_w2idx['<sos>'], dropout=kwargs['dropout'],
+                    utter_n_layer=kwargs['utter_n_layer'],
                     context_threshold=kwargs['context_threshold'])
     else:
         raise Exception(f'[!] wrong model named {kwargs["model"]}')
-
+        
     if torch.cuda.is_available():
         net.cuda()
         net.eval()
 
     print('Net:')
     print(net)
+    print(f'[!] Parameters size: {sum(x.numel() for x in net.parameters())}')
 
     # load best model
     load_best_model(kwargs['dataset'], kwargs['model'], 
@@ -155,11 +214,22 @@ def translate(**kwargs):
             
             # output: [maxlen, batch_size], sbatch: [turn, max_len, batch_size]
             if kwargs['graph'] == 1:
-                output, f_l = net.predict(sbatch, gbatch, subatch, tubatch, len(tbatch), turn_lengths,
+                output, _ = net.predict(sbatch, gbatch, subatch, tubatch, len(tbatch), turn_lengths,
                                           loss=True)
             else:
-                output, f_l = net.predict(sbatch, len(tbatch), turn_lengths,
+                output, _ = net.predict(sbatch, len(tbatch), turn_lengths,
                                           loss=True)
+                
+            # true working ppl by using teach_force
+            with torch.no_grad():
+                if kwargs['graph'] == 1:
+                    f_l = net(sbatch, tbatch, gbatch, 
+                              subatch, tubatch, turn_lengths)
+                else:
+                    f_l = net(sbatch, tbatch, turn_lengths)
+                    if type(f_l) == tuple:
+                        f_l = f_l[0]
+            # teach_force over
                         
             # ipdb.set_trace()
             loss = criterion(f_l[1:].view(-1, len(tgt_w2idx)),
@@ -219,15 +289,7 @@ def translate(**kwargs):
     print(f'[!] write the translate result into {kwargs["pred"]}')
     
     if kwargs['ppl'] == 'origin':
-        print(f'[!] loss: {l}, N-gram PPL: {round(math.exp(l), 4)}', file=open(f'./processed/{kwargs["dataset"]}/{kwargs["model"]}/ppl.txt', 'a'))
-    elif kwargs['ppl'] == 'ngram':
-        # n-gram ppl
-        lm = load_pickle(f'./data/{kwargs["dataset"]}/lm.pkl')
-        ref_data, tgt_data = read_pred_file(kwargs["pred"])
-        print(f'[!] ========== begin to calcualte the n-gram ppl ==========')
-        ref_ppl = ngram_ppl(lm, ref_data)
-        ppl = ngram_ppl(lm, tgt_data)
-        print(f'[!] Ref N-gram ppl: {round(ref_ppl, 4)}, N-gram PPL: {round(ppl, 4)}', file=open(f'./processed/{kwargs["dataset"]}/{kwargs["model"]}/ppl.txt', 'a'))
+        print(f'[!] loss: {l}, PPL: {round(math.exp(l), 4)}', file=open(f'./processed/{kwargs["dataset"]}/{kwargs["model"]}/pertub-ppl.txt', 'a'))
     else:
         raise Exception(f'[!] make sure the mode for ppl calculating is origin or ngram, but {kwargs["ppl"]} is given.')
 
@@ -272,6 +334,10 @@ if __name__ == "__main__":
     parser.add_argument('--plus', type=int, default=2)
     parser.add_argument('--context_threshold', type=int, default=3, help='low turns filter')
     parser.add_argument('--ppl', type=str, default='origin', help='origin: e^{loss} ppl; ngram: supported by NLTK. More details can be found in README.')
+    parser.add_argument('--lr_gamma', type=float, default=0.8, help='lr schedule gamma factor')
+    parser.add_argument('--gat_heads', type=int, default=5, help='heads of GAT layer')
+    parser.add_argument('--z_hidden', type=int, default=100, help='z_hidden for VHRED')
+    parser.add_argument('--kl_annealing_iter', type=int, default=20000, help='KL annealing for VHRED')
 
     args = parser.parse_args()
     

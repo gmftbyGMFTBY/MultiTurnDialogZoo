@@ -307,7 +307,7 @@ elif [ $mode = 'train' ]; then
         --context_hidden 512 \
         --decoder_hidden 512 \
         --embed_size 256 \
-        --patience 10 \
+        --patience 5 \
         --dataset $dataset \
         --grad_clip 3.0 \
         --dropout $dropout \
@@ -336,22 +336,26 @@ elif [ $mode = 'train' ]; then
         --gat_heads 8 \
 
 elif [ $mode = 'translate' ]; then
-    rm ./processed/$dataset/$model/ppl.txt
+    rm ./processed/$dataset/$model/pertub-ppl.txt
 
     CUDA_VISIBLE_DEVICES="$CUDA" python translate.py \
         --src_test ./data/$dataset/src-test.txt \
         --tgt_test ./data/$dataset/tgt-test.txt \
         --min_threshold 0 \
-        --max_threshold 63 \
+        --max_threshold 100 \
         --batch_size $batch_size \
         --model $model \
         --utter_n_layer 2 \
-        --utter_hidden 500 \
-        --context_hidden 500 \
-        --decoder_hidden 500 \
-        --seed 20 \
-        --embed_size 500 \
-        --d_model 500 \
+        --utter_hidden 512 \
+        --context_hidden 512 \
+        --decoder_hidden 512 \
+        --seed 30 \
+        --embed_size 256 \
+        --d_model 512 \
+        --nhead 4 \
+        --num_encoder_layers 8 \
+        --num_decoder_layers 8 \
+        --dim_feedforward 2048 \
         --dataset $dataset \
         --src_vocab ./processed/$dataset/iptvocab.pkl \
         --tgt_vocab ./processed/$dataset/optvocab.pkl \
@@ -365,9 +369,10 @@ elif [ $mode = 'translate' ]; then
         --contextrnn \
         --plus 0 \
         --context_threshold 2 \
-        --ppl origin
+        --ppl origin \
+        --gat_heads 8
         
-    exit    # comment this line for ppl perturbation test, or only translate the test dataset 
+    # exit    # comment this line for ppl perturbation test, or only translate the test dataset 
     # 10 perturbation
     for i in {1..10}
     do
@@ -376,30 +381,35 @@ elif [ $mode = 'translate' ]; then
             --src_test ./data/$dataset/src-test-perturbation-${i}.txt \
             --tgt_test ./data/$dataset/tgt-test.txt \
             --min_threshold 0 \
-            --max_threshold 63 \
+            --max_threshold 100 \
             --batch_size $batch_size \
             --model $model \
             --utter_n_layer 2 \
-            --utter_hidden 500 \
-            --context_hidden 500 \
-            --decoder_hidden 500 \
-            --seed 20 \
-            --embed_size 500 \
-            --d_model 300 \
+            --utter_hidden 512 \
+            --context_hidden 512 \
+            --decoder_hidden 512 \
+            --seed 30 \
+            --embed_size 256 \
+            --d_model 512 \
+            --nhead 4 \
+            --num_encoder_layers 8 \
+            --num_decoder_layers 8 \
+            --dim_feedforward 2048 \
             --dataset $dataset \
             --src_vocab ./processed/$dataset/iptvocab.pkl \
             --tgt_vocab ./processed/$dataset/optvocab.pkl \
             --maxlen $maxlen \
             --pred ./processed/${dataset}/${model}/pred.txt \
             --hierarchical $hierarchical \
-            --tgt_maxlen 50 \
+            --tgt_maxlen $tgtmaxlen \
             --graph $graph \
             --test_graph ./processed/$dataset/test-graph-perturbation-${i}.pkl \
             --position_embed_size 30 \
             --contextrnn \
             --plus 0 \
             --context_threshold 2 \
-            --ppl origin
+            --ppl origin \
+            --gat_heads 8
     done
 
 elif [ $mode = 'eval' ]; then
@@ -408,8 +418,7 @@ elif [ $mode = 'eval' ]; then
         --file ./processed/${dataset}/${model}/pred.txt
         
 elif [ $mode = 'curve' ]; then
-    # do not add the BERTScore evaluate when begin to curve mode
-    # evaluation will be too slow
+    # this part of codes is useless (tensorboard is all you need)
     rm ./processed/${dataset}/${model}/conclusion.txt
     
     # for i in {1..30}
