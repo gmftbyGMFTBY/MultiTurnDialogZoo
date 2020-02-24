@@ -18,16 +18,22 @@ import math
 
 from utils import *
 from data_loader import *
-from model.HRED import HRED
+from metric.metric import *
 from model.seq2seq_attention import Seq2Seq
+from model.seq2seq_multi_head_attention import Seq2Seq_Multi_Head
+from model.seq2seq_transformer import Transformer
+from model.HRED import HRED
+from model.VHRED import VHRED
+from model.KgCVAE import KgCVAE
+from model.HRAN import HRAN
+from model.HRAN_ablation import HRAN_ablation
 from model.WSeq import WSeq
-from model.ReCoSa import ReCoSa
-from model.seq2seq_transformer import transformer
 from model.DSHRED import DSHRED
 from model.MReCoSa import MReCoSa
 from model.MTGCN import MTGCN
-from model.GCNRNN import GCNRNN
+from model.MTGAT import MTGAT
 from model.GatedGCN import GatedGCN
+from model.layers import 
 
 
 def translate(**kwargs):
