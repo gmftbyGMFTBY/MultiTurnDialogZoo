@@ -120,9 +120,12 @@ elif [ $mode = 'perturbation' ]; then
             --src_vocab ./processed/$dataset/iptvocab.pkl \
             --tgt_vocab ./processed/$dataset/optvocab.pkl \
             --graph ./processed/$dataset/test-graph-perturbation-${i}.pkl \
-            --threshold 0.4 \
             --maxlen $maxlen \
             --no-bidir
+            --threshold 0.8 \
+            --lang $3 \
+            --no-fully \
+            --no-self-loop \
     done
 
 elif [ $mode = 'vocab' ]; then
@@ -321,7 +324,7 @@ elif [ $mode = 'train' ]; then
         --graph $graph \
         --maxlen $maxlen \
         --tgt_maxlen $tgtmaxlen \
-        --position_embed_size 500 \
+        --position_embed_size 30 \
         --context_threshold 2 \
         --dynamic_tfr 15 \
         --dynamic_tfr_weight 0.0 \
