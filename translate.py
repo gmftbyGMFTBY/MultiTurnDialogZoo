@@ -33,7 +33,7 @@ from model.MReCoSa import MReCoSa
 from model.MTGCN import MTGCN
 from model.MTGAT import MTGAT
 from model.GatedGCN import GatedGCN
-from model.layers import 
+from model.layers import *
 
 
 def translate(**kwargs):
@@ -330,6 +330,10 @@ if __name__ == "__main__":
                         help='the csv file save the output')
     parser.add_argument('--hierarchical', type=int, default=1, help='whether hierarchical architecture')
     parser.add_argument('--d_model', type=int, default=512, help='d_model for transformer')
+    parser.add_argument('--nhead', type=int, default=8, help='head number for transformer')
+    parser.add_argument('--num_encoder_layers', type=int, default=6)
+    parser.add_argument('--num_decoder_layers', type=int, default=6)
+    parser.add_argument('--dim_feedforward', type=int, default=2048)
     parser.add_argument('--tgt_maxlen', type=int, default=50, help='target sequence maxlen')
     parser.add_argument('--pretrained', type=str, default=None, help='pretrained mode')
     parser.add_argument('--contextrnn', dest='contextrnn', action='store_true')
