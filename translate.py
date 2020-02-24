@@ -348,6 +348,8 @@ if __name__ == "__main__":
     parser.add_argument('--gat_heads', type=int, default=5, help='heads of GAT layer')
     parser.add_argument('--z_hidden', type=int, default=100, help='z_hidden for VHRED')
     parser.add_argument('--kl_annealing_iter', type=int, default=20000, help='KL annealing for VHRED')
+    parser.add_argument('--teach_force', type=float, default=1, 
+                        help='teach force ratio')
 
     args = parser.parse_args()
     
