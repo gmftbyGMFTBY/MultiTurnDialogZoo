@@ -350,6 +350,7 @@ if __name__ == "__main__":
     parser.add_argument('--kl_annealing_iter', type=int, default=20000, help='KL annealing for VHRED')
     parser.add_argument('--teach_force', type=float, default=1, 
                         help='teach force ratio')
+    parser.add_argument('--dropout', type=float, default=1, help='dropout ratio')
 
     args = parser.parse_args()
     

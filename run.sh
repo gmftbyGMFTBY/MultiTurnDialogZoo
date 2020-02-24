@@ -337,6 +337,17 @@ elif [ $mode = 'train' ]; then
 
 elif [ $mode = 'translate' ]; then
     rm ./processed/$dataset/$model/pertub-ppl.txt
+    
+    if [ $model = 'Transformer' ]; then
+        # other repo set the 0.1 as the dropout ratio, remain it
+        dropout=0.3
+        lr=1e-4
+        lr_mini=1e-6
+    else
+        dropout=0.3
+        lr=1e-4
+        lr_mini=1e-6
+    fi
 
     CUDA_VISIBLE_DEVICES="$CUDA" python translate.py \
         --src_test ./data/$dataset/src-test.txt \
@@ -350,6 +361,7 @@ elif [ $mode = 'translate' ]; then
         --context_hidden 512 \
         --decoder_hidden 512 \
         --seed 30 \
+        --dropout $dropout \
         --embed_size 256 \
         --d_model 512 \
         --nhead 4 \
@@ -390,6 +402,7 @@ elif [ $mode = 'translate' ]; then
             --context_hidden 512 \
             --decoder_hidden 512 \
             --seed 30 \
+            --dropout $dropout \
             --embed_size 256 \
             --d_model 512 \
             --nhead 4 \
