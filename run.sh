@@ -104,6 +104,7 @@ elif [ $mode = 'transformer_preprocess' ]; then
         --ctx 200
 
 elif [ $mode = 'perturbation' ]; then
+    # run.sh perturbation dailydialog en 
     echo "[!] Begin to perturbation the source test dataset"
     for i in {1..10}
     do
@@ -121,11 +122,11 @@ elif [ $mode = 'perturbation' ]; then
             --tgt_vocab ./processed/$dataset/optvocab.pkl \
             --graph ./processed/$dataset/test-graph-perturbation-${i}.pkl \
             --maxlen $maxlen \
-            --no-bidir
+            --no-bidir \
             --threshold 0.8 \
             --lang $3 \
             --no-fully \
-            --no-self-loop \
+            --no-self-loop
     done
 
 elif [ $mode = 'vocab' ]; then
@@ -351,6 +352,15 @@ elif [ $mode = 'translate' ]; then
         lr=1e-4
         lr_mini=1e-6
     fi
+    
+    if [[ $model = 'VHRED' || $model = 'KgCVAE' ]]; then
+        echo "[!] VHRED or KgCVAE, src vocab == tgt vocab"
+        src_vocab="./processed/$dataset/vocab.pkl"
+        tgt_vocab="./processed/$dataset/vocab.pkl"
+    else
+        src_vocab="./processed/$dataset/iptvocab.pkl"
+        tgt_vocab="./processed/$dataset/optvocab.pkl"
+    fi
 
     CUDA_VISIBLE_DEVICES="$CUDA" python translate.py \
         --src_test ./data/$dataset/src-test.txt \
@@ -372,8 +382,8 @@ elif [ $mode = 'translate' ]; then
         --num_decoder_layers 8 \
         --dim_feedforward 2048 \
         --dataset $dataset \
-        --src_vocab ./processed/$dataset/iptvocab.pkl \
-        --tgt_vocab ./processed/$dataset/optvocab.pkl \
+        --src_vocab $src_vocab \
+        --tgt_vocab $tgt_vocab \
         --maxlen $maxlen \
         --pred ./processed/${dataset}/${model}/pred.txt \
         --hierarchical $hierarchical \
@@ -413,8 +423,8 @@ elif [ $mode = 'translate' ]; then
             --num_decoder_layers 8 \
             --dim_feedforward 2048 \
             --dataset $dataset \
-            --src_vocab ./processed/$dataset/iptvocab.pkl \
-            --tgt_vocab ./processed/$dataset/optvocab.pkl \
+            --src_vocab $src_vocab \
+            --tgt_vocab $tgt_vocab \
             --maxlen $maxlen \
             --pred ./processed/${dataset}/${model}/pred.txt \
             --hierarchical $hierarchical \
