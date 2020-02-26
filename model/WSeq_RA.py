@@ -199,8 +199,12 @@ class WSeq_RA(nn.Module):
         self.teach_force = teach_force
         self.output_size = output_size
         self.pad, self.sos = pad, sos
-        self.utter_encoder = Utterance_encoder(input_size, embed_size, utter_hidden, 
-                                               dropout=dropout, n_layer=utter_n_layer,
+        self.utter_n_layer = utter_n_layer
+        self.hidden_size = decoder_hidden
+        self.utter_encoder = Utterance_encoder(input_size, embed_size, 
+                                               utter_hidden, 
+                                               dropout=dropout, 
+                                               n_layer=utter_n_layer,
                                                pretrained=pretrained)
         self.decoder = Decoder(utter_hidden, context_hidden,
                                output_size, embed_size,
