@@ -46,18 +46,27 @@ def translate(**kwargs):
     # load dataset
     if kwargs['hierarchical'] == 1:
         if kwargs['graph'] == 1:
-            test_iter = get_batch_data_graph(kwargs['src_test'], kwargs['tgt_test'],
-                                             kwargs['test_graph'], kwargs['src_vocab'],
-                                             kwargs['tgt_vocab'], kwargs['batch_size'],
-                                             kwargs['maxlen'], kwargs["tgt_maxlen"])
+            test_iter = get_batch_data_graph(kwargs['src_test'],
+                                             kwargs['tgt_test'],
+                                             kwargs['test_graph'], 
+                                             kwargs['src_vocab'],
+                                             kwargs['tgt_vocab'], 
+                                             kwargs['batch_size'],
+                                             kwargs['maxlen'], 
+                                             kwargs["tgt_maxlen"])
         else:
+            if kwargs['model'] in ['VHRED','KgCVAE']:
+                ld = False
+            else:
+                ld = True
             test_iter = get_batch_data(kwargs['src_test'], kwargs['tgt_test'],
                                        kwargs['src_vocab'], kwargs['tgt_vocab'],
                                        kwargs['batch_size'], kwargs['maxlen'],
-                                       kwargs["tgt_maxlen"])
+                                       kwargs["tgt_maxlen"], ld=ld)
     else:
         test_iter = get_batch_data_flatten(kwargs['src_test'], kwargs['tgt_test'],
-                                           kwargs['src_vocab'], kwargs['tgt_vocab'],
+                                           kwargs['src_vocab'], 
+                                           kwargs['tgt_vocab'],
                                            kwargs['batch_size'], kwargs['maxlen'], 
                                            kwargs['tgt_maxlen'])
 

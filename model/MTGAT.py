@@ -102,13 +102,14 @@ class GATContext(nn.Module):
         self.layer_norm1 = nn.LayerNorm(inpt_size)
         self.layer_norm2 = nn.LayerNorm(inpt_size)
         self.layer_norm3 = nn.LayerNorm(inpt_size)
+        self.layer_norm4 = nn.LayerNorm(inpt_size)
         self.compress = nn.Linear(head * inpt_size, inpt_size)
 
         # rnn for background
         self.rnn = nn.GRU(inpt_size + user_embed_size, inpt_size, bidirectional=True)
 
         self.linear1 = nn.Linear(inpt_size * 2, inpt_size)
-        self.linear2 = nn.Linear(inpt_size * 2, output_size)
+        self.linear2 = nn.Linear(inpt_size, output_size)
         self.drop = nn.Dropout(p=dropout)
         
         # 100 is far bigger than the max turn lengths (cornell and dailydialog datasets)
@@ -206,7 +207,9 @@ class GATContext(nn.Module):
         # [nodes/turn_len, output_size]
         # take apart to get the mini-batch
         x = torch.stack(x.chunk(batch_size, dim=0)).permute(1, 0, 2)    # [turn, batch, inpt_size]
-        x = torch.cat([rnn_x, x], dim=2)    # [turn, batch, inpt_size * 2]
+        # x = torch.cat([rnn_x, x], dim=2)    # [turn, batch, inpt_size * 2]
+        # change it into rnn_x + x -> layernorm
+        x = self.layer_norm4(rnn_x + x)
         x = torch.tanh(self.linear2(x))    # [turn, batch, output_size]
         return x, rnnh
 

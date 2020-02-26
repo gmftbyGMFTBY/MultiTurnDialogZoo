@@ -88,6 +88,9 @@ class Multi_head_attention_trs(nn.Module):
     '''
     make sure the hidden_size can be divisible by nhead
     Recommand: 512, 8
+    
+    1. Multi head attention for encoder hidden state
+    2. Use the hidden state to query the context encoder
     '''
     
     def __init__(self, hidden_size, nhead=8, dropout=0.3):
@@ -99,19 +102,22 @@ class Multi_head_attention_trs(nn.Module):
             raise Exception(f'hidden_size must be divisble by nhead, but got {hidden_size}/{nhead}.')
         
         self.multi_head_attention = nn.MultiheadAttention(hidden_size, nhead)
-        self.ffn = nn.Linear(self.hidden_size, self.hidden_size)
-        # self.drop = nn.Dropout(p=dropout)
+        self.layer_norm = nn.LayerNorm(hidden_size)
+        self.final_attn = Attention(hidden_size)
         
     def forward(self, hidden, encoder_outputs):
         # hidden: [batch, hidden]
         # encoder_outputs: [seq, batch, hidden]
         # return: context [1, batch, seq]
-        query = hidden.unsqueeze(0)    # [1, batch, hidden]
+        
         # context: [1, batch, hidden]
-        context, _ = self.multi_head_attention(query, 
+        context, _ = self.multi_head_attention(encoder_outputs, 
                                                encoder_outputs, 
                                                encoder_outputs)
-        context = torch.tanh(self.ffn(context))    # [1, batch, hidden]
+        context = self.layer_norm(context + encoder_outputs)
+        attn_weights = self.final_attn(hidden.unsqueeze(0), context)
+        context = attn_weights.bmm(context.transpose(0, 1))
+        context = context.transpose(0, 1)
         return context
 
 

@@ -93,7 +93,7 @@ class Decoder(nn.Module):
         self.embed = nn.Embedding(output_size, embed_size)
         
         # self.attention = Multi_head_attention(hidden_size, nhead)
-        self.attention = Multi_head_attention(hidden_size, nhead)
+        self.attention = Multi_head_attention_trs(hidden_size, nhead)
         
         self.rnn = nn.GRU(hidden_size + embed_size, 
                           hidden_size,

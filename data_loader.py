@@ -69,14 +69,14 @@ def load_data_flatten(src, tgt, src_vocab, tgt_vocab, maxlen, tgt_maxlen):
 
 
 def get_batch_data(src, tgt, src_vocab, tgt_vocab, batch_size, maxlen, tgt_maxlen,
-                   plus=0):
+                   plus=0, ld=True):
     # batch and convert to tensor for training
     # batch according to the turns
     # [datasize, turns, lengths], [datasize, lengths]
     src_w2idx, src_idx2w = load_pickle(src_vocab)
     tgt_w2idx, tgt_idx2w = load_pickle(tgt_vocab)
     
-    src_dataset, _, tgt_dataset, _ = load_data(src, tgt, src_vocab, tgt_vocab, maxlen, tgt_maxlen)
+    src_dataset, _, tgt_dataset, _ = load_data(src, tgt, src_vocab, tgt_vocab, maxlen, tgt_maxlen, ld=ld)
     turns = [len(dialog) for dialog in src_dataset]
     turnidx = np.argsort(turns)
     # sort by the lengrh of the turns

@@ -31,6 +31,7 @@ from model.KgCVAE import KgCVAE
 from model.HRAN import HRAN
 from model.HRAN_ablation import HRAN_ablation
 from model.WSeq import WSeq
+from model.WSeq_RA import WSeq_RA
 from model.DSHRED import DSHRED
 from model.MReCoSa import MReCoSa
 from model.MTGCN import MTGCN
@@ -413,6 +414,14 @@ def main(**kwargs):
                    utter_n_layer=kwargs['utter_n_layer'], 
                    dropout=kwargs['dropout'],
                    pretrained=pretrained)
+    elif kwargs['model'] == 'WSeq_RA':
+        net = WSeq_RA(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
+                   kwargs['utter_hidden'], kwargs['context_hidden'],
+                   kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                   pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                   utter_n_layer=kwargs['utter_n_layer'], 
+                   dropout=kwargs['dropout'],
+                   pretrained=pretrained)
     elif kwargs['model'] == 'Transformer':
         net = Transformer(len(src_w2idx), len(tgt_w2idx), kwargs['d_model'], 
                           kwargs['nhead'], kwargs['num_encoder_layers'], 
@@ -531,27 +540,34 @@ def main(**kwargs):
                                                 kwargs['maxlen'],
                                                 kwargs['tgt_maxlen'])
             else:
+                if kwargs['model'] in ['VHRED','KgCVAE']:
+                    ld = False
+                else:
+                    ld = True
                 train_iter = get_batch_data(kwargs['src_train'], 
                                             kwargs['tgt_train'],
                                             kwargs['src_vocab'], 
                                             kwargs['tgt_vocab'], 
                                             kwargs['batch_size'], 
                                             kwargs['maxlen'],
-                                            kwargs['tgt_maxlen'])
+                                            kwargs['tgt_maxlen'],
+                                            ld=ld)
                 test_iter = get_batch_data(kwargs['src_test'], 
                                            kwargs['tgt_test'],
                                            kwargs['src_vocab'], 
                                            kwargs['tgt_vocab'],
                                            kwargs['batch_size'],
                                            kwargs['maxlen'],
-                                           kwargs['tgt_maxlen'])
+                                           kwargs['tgt_maxlen'],
+                                           ld=ld)
                 dev_iter = get_batch_data(kwargs['src_dev'], 
                                           kwargs['tgt_dev'],
                                           kwargs['src_vocab'], 
                                           kwargs['tgt_vocab'],
                                           kwargs['batch_size'],
                                           kwargs['maxlen'],
-                                          kwargs['tgt_maxlen'])
+                                          kwargs['tgt_maxlen'],
+                                          ld=ld)
         else:
             train_iter = get_batch_data_flatten(kwargs['src_train'],
                                                     kwargs['tgt_train'],

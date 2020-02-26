@@ -216,14 +216,15 @@ def generate_bert_embedding(vocab, path):
     
     
 # load data function for hierarchical models
-def load_data(src, tgt, src_vocab, tgt_vocab, maxlen, tgt_maxlen):
+def load_data(src, tgt, src_vocab, tgt_vocab, maxlen, tgt_maxlen, ld=True):
+    # ld: whether load directly (VHRED/KgCVAE False), the target vocab of VHRED-based model is different from the original models, so the processed dataset isn't compatible.
     # convert dataset into src: [datasize, turns, lengths]
     # convert dataset into tgt: [datasize, lengths]
     # check the file, exist -> ignore
     # move it to the file `data_loader.py`
     src_prepath = os.path.splitext(src)[0] + '-hier.pkl'
     tgt_prepath = os.path.splitext(tgt)[0] + '-hier.pkl'
-    if os.path.exists(src_prepath) and os.path.exists(tgt_prepath):
+    if ld and os.path.exists(src_prepath) and os.path.exists(tgt_prepath):
         print(f'[!] preprocessed file {src_prepath} exist, load directly')
         print(f'[!] preprocessed file {tgt_prepath} exist, load directly')
         with open(src_prepath, 'rb') as f:
@@ -272,13 +273,15 @@ def load_data(src, tgt, src_vocab, tgt_vocab, maxlen, tgt_maxlen):
                 line = line[:tgt_maxlen] + [tgt_w2idx['<eos>']]
             tgt_dataset.append(line)
             tgt_user.append(user_vocab.index(user_cr))
-            
-    print(f'[!] load dataset over, write into file {src_prepath} and {tgt_prepath}')
     
-    with open(src_prepath, 'wb') as f:
-        pickle.dump((src_dataset, src_user), f)
-    with open(tgt_prepath, 'wb') as f:
-        pickle.dump((tgt_dataset, tgt_user), f)
+    if ld:
+        with open(src_prepath, 'wb') as f:
+            pickle.dump((src_dataset, src_user), f)
+        with open(tgt_prepath, 'wb') as f:
+            pickle.dump((tgt_dataset, tgt_user), f)
+        print(f'[!] load dataset over, write into file {src_prepath} and {tgt_prepath}')
+    else:
+        print('[!] VHRED or KgCVAE donot write the dataset file')
  
     # src_user: [datasize, turn], tgt_user: [datasize]
     return src_dataset, src_user, tgt_dataset, tgt_user
@@ -878,7 +881,7 @@ if __name__ == "__main__":
     elif mode == 'graph':
         # save the preprocessed data for generating graph
         src_dataset, src_user, tgt_dataset, tgt_user = load_data(args.src, args.tgt, args.src_vocab, args.tgt_vocab, args.maxlen, args.tgt_maxlen)
-        print(f'[!] load the cf mode dataset, prepare for preprocessing')
+        print(f'[!] prepare for preprocessing')
         ppdataset = idx2sent(src_dataset, args.src_vocab)
         print(f'[!] begin to create the graph')
         # ipdb.set_trace()
