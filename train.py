@@ -612,9 +612,11 @@ def main(**kwargs):
         if type(train_loss) == tuple:
             # VHRED
             train_loss, kl_mult = train_loss
-        val_loss = validation(dev_iter, net, len(tgt_w2idx), tgt_w2idx['<pad>'],
-                              transformer_decode=kwargs['transformer_decode'],
-                              graph=kwargs['graph']==1)
+        with torch.no_grad():
+            val_loss = validation(dev_iter, net, len(tgt_w2idx), 
+                                  tgt_w2idx['<pad>'],
+                                  transformer_decode=kwargs['transformer_decode'],
+                                  graph=kwargs['graph']==1)
         
         # add loss scalar to tensorboard
         # and write the lr schedule, and teach force
@@ -644,7 +646,8 @@ def main(**kwargs):
         #     break
         
         # translate on test dataset
-        ppl = translate(test_iter, net, **kwargs)
+        with torch.no_grad():
+            ppl = translate(test_iter, net, **kwargs)
         
         # write the performance into the tensorboard
         write_into_tb(kwargs['pred'], writer, writer_str, epoch, ppl, kwargs['bleu'], kwargs['model'], kwargs['dataset'])
