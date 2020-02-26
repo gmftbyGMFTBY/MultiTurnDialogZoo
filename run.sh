@@ -43,6 +43,9 @@ elif [ $model = 'MReCoSa' ]; then
 elif [ $model = 'DSHRED' ]; then
     hierarchical=1
     graph=0
+elif [ $model = 'DSHRED_RA' ]; then
+    hierarchical=1
+    graph=0
 elif [ $model = 'Seq2Seq' ]; then
     hierarchical=0
     graph=0
@@ -86,8 +89,8 @@ elif [ $transformer_decode = 1 ]; then
     batch_size=64
 else
     maxlen=150
-    tgtmaxlen=30
-    batch_size=32
+    tgtmaxlen=25
+    batch_size=28
 fi
 
 # ========== Ready Perfectly ========== #

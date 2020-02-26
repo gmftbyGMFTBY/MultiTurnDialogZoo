@@ -110,11 +110,12 @@ class Multi_head_attention_trs(nn.Module):
         # encoder_outputs: [seq, batch, hidden]
         # return: context [1, batch, seq]
         
-        # context: [1, batch, hidden]
+        # context: [seq, batch, hidden]
         context, _ = self.multi_head_attention(encoder_outputs, 
                                                encoder_outputs, 
                                                encoder_outputs)
-        context = self.layer_norm(context + encoder_outputs)
+        context = context + encoder_outputs
+        context = torch.tanh(self.layer_norm(context))
         attn_weights = self.final_attn(hidden.unsqueeze(0), context)
         context = attn_weights.bmm(context.transpose(0, 1))
         context = context.transpose(0, 1)

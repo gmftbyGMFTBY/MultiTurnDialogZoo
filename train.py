@@ -33,6 +33,7 @@ from model.HRAN_ablation import HRAN_ablation
 from model.WSeq import WSeq
 from model.WSeq_RA import WSeq_RA
 from model.DSHRED import DSHRED
+from model.DSHRED_RA import DSHRED_RA
 from model.MReCoSa import MReCoSa
 from model.MTGCN import MTGCN
 from model.MTGAT import MTGAT
@@ -400,6 +401,14 @@ def main(**kwargs):
                    pretrained=pretrained)
     elif kwargs['model'] == 'DSHRED':
         net = DSHRED(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
+                     kwargs['utter_hidden'], kwargs['context_hidden'],
+                     kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                     pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                     utter_n_layer=kwargs['utter_n_layer'], 
+                     dropout=kwargs['dropout'],
+                     pretrained=pretrained)
+    elif kwargs['model'] == 'DSHRED_RA':
+        net = DSHRED_RA(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
                      kwargs['utter_hidden'], kwargs['context_hidden'],
                      kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
                      pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
