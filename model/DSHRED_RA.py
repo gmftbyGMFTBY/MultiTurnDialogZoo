@@ -159,8 +159,8 @@ class DSDecoder(nn.Module):
         # attention on context encoder
         self.attn = Attention(hidden_size)
         self.word_level_attn = Attention(hidden_size)
-        self.context_encoder = Context_encoder(utter_hidden, context_hidden, 
-                                               dropout=dropout)
+        self.context_encoder = DSContext_encoder(utter_hidden, context_hidden, 
+                                                 dropout=dropout)
 
         self.init_weight()
 
@@ -191,8 +191,8 @@ class DSDecoder(nn.Module):
         static_attn, context_output, hidden = self.context_encoder(context_output)
 
         # [batch, 1, seq_len]
-        attn_weights = self.attn(key, encoder_outputs)
-        context = attn_weights.bmm(encoder_outputs.transpose(0, 1))
+        attn_weights = self.attn(key, context_output)
+        context = attn_weights.bmm(context_output.transpose(0, 1))
         context = context.transpose(0, 1)    # [1, batch, hidden], dynmaic attn
         
         # combine dynamic attn and static attn
@@ -224,7 +224,8 @@ class DSHRED_RA(nn.Module):
                                                  utter_hidden, dropout=dropout,
                                                  n_layer=utter_n_layer,
                                                  pretrained=pretrained)
-        self.decoder = DSDecoder(output_size, embed_size, decoder_hidden, 
+        self.decoder = DSDecoder(utter_hidden, context_hidden,
+                                 output_size, embed_size, decoder_hidden, 
                                  dropout=dropout, n_layer=utter_n_layer, 
                                  pretrained=pretrained)
 
