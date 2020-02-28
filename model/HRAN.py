@@ -224,7 +224,6 @@ class HRAN(nn.Module):
                                output_size, embed_size, decoder_hidden,
                                dropout=dropout, n_layer=utter_n_layer,
                                pretrained=pretrained)
-        self.word_level_attention = Attention(utter_hidden)
 
     def forward(self, src, tgt, lengths):
         # src: [turns, lengths, batch], tgt: [lengths, batch]

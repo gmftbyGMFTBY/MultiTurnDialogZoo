@@ -60,8 +60,10 @@ class Encoder(nn.Module):
 
         embedded = nn.utils.rnn.pack_padded_sequence(embedded, inpt_lengths, 
                                                      enforce_sorted=False)
-        _, hidden = self.rnn(embedded, hidden)
-        
+        output, hidden = self.rnn(embedded, hidden)
+        output, _ = nn.utils.rnn.pad_packed_sequence(output)
+        output = output[:, :, :self.hidden_size] + output[:, :, self.hidden_size:]
+        output = torch.tanh(output)
         # using .sum and .tanh to avoid the same output (always "I'm not sure, I don't know")
         # hidden = hidden.sum(axis=0)
         # hidden = hidden.permute(1, 0, 2)
@@ -70,7 +72,7 @@ class Encoder(nn.Module):
         hidden = torch.tanh(hidden)
 
         # [batch, hidden_size]
-        return hidden
+        return output, hidden
 
 
 class Decoder(nn.Module):
@@ -85,9 +87,16 @@ class Decoder(nn.Module):
         self.rnn = nn.GRU(hidden_size + embed_size, hidden_size, 
                           num_layers=n_layer, dropout=(0 if n_layer == 1 else dropout))
         self.out = nn.Linear(hidden_size, output_size)
-
-        self.init_weight()
+        self.pos_emb = PositionEmbedding(embed_size, dropout=dropout)
+        self.self_attention_context1 = nn.MultiheadAttention(embed_size, 8)
+        self.layer_norm1 = nn.LayerNorm(embed_size)
+        self.self_attention_context2 = nn.MultiheadAttention(embed_size, 8)
+        self.layer_norm2 = nn.LayerNorm(embed_size)
+        self.self_attention_context3 = nn.MultiheadAttention(embed_size, 8)
+        self.layer_norm3 = nn.LayerNorm(embed_size)
         self.self_attention = nn.MultiheadAttention(hidden_size, 8)
+        self.word_level_attn = Attention(embed_size)
+        self.init_weight()
 
     def init_weight(self):
         init.xavier_normal_(self.rnn.weight_hh_l0)
@@ -95,17 +104,39 @@ class Decoder(nn.Module):
         self.rnn.bias_ih_l0.data.fill_(0.0)
         self.rnn.bias_hh_l0.data.fill_(0.0)
 
-    def forward(self, inpt, last_hidden, context_encoder):
+    def forward(self, inpt, last_hidden, context_outputs):
         # inpt: [batch], last_hidden: [4, batch, hidden_size]
-        # context_encoder: [seq_len, batch, hidden]
+        # context_encoder: [turn, seq_len, batch, hidden]
         embedded = self.embed(inpt).unsqueeze(0)    # [1, batch, embed_size]
         key = last_hidden.sum(axis=0).unsqueeze(0)
+        
+        # word level attention
+        context_output = []
+        for turn in context_outputs:
+            # ipdb.set_trace()
+            word_attn_weights = self.word_level_attn(key, turn)
+            context = word_attn_weights.bmm(turn.transpose(0, 1))
+            context = context.transpose(0, 1).squeeze(0)    # [batch, hidden]
+            context_output.append(context)
+        context_output = torch.stack(context_output)    # [turn, batch, hidden]
+        context_output = self.pos_emb(context_output)   # [turn, batch, hidden]
+        
+        context, _ = self.self_attention_context1(context_output,
+                                                  context_output,
+                                                  context_output)
+        context_output = self.layer_norm1(context + context_output)    # [turn, batch, hidden]
+        context, _ = self.self_attention_context2(context_output,
+                                                  context_output,
+                                                  context_output)
+        context_output = self.layer_norm2(context + context_output)    # [turn, batch, hidden]
+        context, _ = self.self_attention_context3(context_output,
+                                                  context_output,
+                                                  context_output)
+        context_output = self.layer_norm3(context + context_output)    # [turn, batch, hidden]
 
         # attn_weight
         # context: [1, batch, embed], attn_weight: [batch, 1, src_seq_len]
-        context, attn_weight = self.self_attention(key, 
-                                                   context_encoder, 
-                                                   context_encoder)
+        context, _ = self.self_attention(key, context_output, context_output)
         rnn_input = torch.cat([embedded, context], 2)
         output, hidden = self.rnn(rnn_input, last_hidden[-self.n_layer:])
         output = output.squeeze(0)
@@ -120,12 +151,12 @@ class Decoder(nn.Module):
         return output, hidden
 
 
-class MReCoSa(nn.Module):
+class MReCoSa_RA(nn.Module):
 
     def __init__(self, input_size, embed_size, output_size, utter_hidden, 
                  decoder_hidden, teach_force=0.5, pad=1, sos=1, dropout=0.5, 
                  utter_n_layer=1, pretrained=None):
-        super(MReCoSa, self).__init__()
+        super(MReCoSa_RA, self).__init__()
         self.encoder = Encoder(input_size, embed_size, utter_hidden, n_layers=utter_n_layer,
                                dropout=dropout, pretrained=pretrained)
         self.decoder = Decoder(embed_size, decoder_hidden, output_size, n_layer=utter_n_layer,
@@ -133,35 +164,32 @@ class MReCoSa(nn.Module):
         self.teach_force = teach_force
         self.pad, self.sos = pad, sos
         self.output_size = output_size
-        self.pos_emb = PositionEmbedding(embed_size, dropout=dropout)
-        self.self_attention_context1 = nn.MultiheadAttention(embed_size, 8)
-        self.layer_norm1 = nn.LayerNorm(embed_size)
-        self.self_attention_context2 = nn.MultiheadAttention(embed_size, 8)
-        self.layer_norm2 = nn.LayerNorm(embed_size)
-        self.self_attention_context3 = nn.MultiheadAttention(embed_size, 8)
-        self.layer_norm3 = nn.LayerNorm(embed_size)
+        self.utter_n_layer = utter_n_layer
+        self.hidden_size = decoder_hidden
 
     def forward(self, src, tgt, lengths):
         # src: [turn, lengths, batch], tgt: [seq, batch], lengths: [turns, batch]
         turn_size, batch_size, max_len = len(src), tgt.size(1), tgt.size(0)
 
-        # encoder
-        turns = []
+        # utterance encoding
+        # turns = []
+        turns_output = []
         for i in range(turn_size):
-            hidden = self.encoder(src[i], lengths[i])
-            turns.append(hidden.sum(axis=0))
-        turns = torch.stack(turns)
-        turns = self.pos_emb(turns)    # [turn_len, batch, hidden], hidden [4, batch, hidden]
+            # sbatch = src[i].transpose(0, 1)    # [seq_len, batch]
+            # [4, batch, hidden]
+            output, hidden = self.encoder(src[i], lengths[i])    # utter_hidden
+            # turns.append(hidden)  
+            turns_output.append(output)    # [turn, seq, batch, hidden]
+        # turns = torch.stack(turns)    # [turn_len, batch, utter_hidden]
+        # turns = self.pos_emb(turns)    # [turn, batch, utter_hidden]
+        
+        hidden = torch.randn(self.utter_n_layer, batch_size, self.hidden_size)
+        if torch.cuda.is_available():
+            hidden = hidden.cuda()
 
         # context multi-head attention
         # context: [seq, batch, hidden]
-        # context, attn_weight = self.self_attention(turns, turns, turns) 
-        context, _ = self.self_attention_context1(turns, turns, turns)
-        turns = self.layer_norm1(context + turns)    # [turn, batch, hidden]
-        context, _ = self.self_attention_context2(turns, turns, turns)
-        turns = self.layer_norm2(context + turns)    # [turn, batch, hidden]
-        context, _ = self.self_attention_context3(turns, turns, turns)
-        turns = self.layer_norm3(context + turns)    # [turn, batch, hidden]
+        # context, attn_weight = self.self_attention(turns, turns, turns)
         
         # decode with multi-head attention
         outputs = torch.zeros(max_len, batch_size, self.output_size)
@@ -172,12 +200,12 @@ class MReCoSa(nn.Module):
         use_teacher = random.random() < self.teach_force
         if use_teacher:
             for t in range(1, max_len):
-                output, hidden = self.decoder(output, hidden, turns)
+                output, hidden = self.decoder(output, hidden, turns_output)
                 outputs[t] = output
                 output = tgt[t]
         else:
             for t in range(1, max_len):
-                output, hidden = self.decoder(output, hidden, turns)
+                output, hidden = self.decoder(output, hidden, turns_output)
                 outputs[t] = output
                 output = torch.max(output, 1)[1]
 
@@ -187,12 +215,13 @@ class MReCoSa(nn.Module):
     def predict(self, src, maxlen, lengths, loss=False):
         with torch.no_grad():
             turn_size, batch_size = len(src), src[0].size(1)
-            turns = []
+            turns_output = []
             for i in range(turn_size):
-                hidden = self.encoder(src[i], lengths[i])
-                turns.append(hidden.sum(axis=0))
-            turns = torch.stack(turns)
-            turns = self.pos_emb(turns)
+                # sbatch = src[i].transpose(0, 1)    # [seq_len, batch]
+                # [4, batch, hidden]
+                output, hidden = self.encoder(src[i], lengths[i])    # utter_hidden
+                # turns.append(hidden)  
+                turns_output.append(output)    # [turn, seq, batch, hidden]
 
             outputs = torch.zeros(maxlen, batch_size)
             output = torch.zeros(batch_size, dtype=torch.long).fill_(self.sos)
@@ -204,15 +233,13 @@ class MReCoSa(nn.Module):
 
             # context multi-head attention
             # context, attn_weight = self.self_attention(turns, turns, turns)
-            context, _ = self.self_attention_context1(turns, turns, turns)
-            turns = self.layer_norm1(context + turns)    # [turn, batch, hidden]
-            context, _ = self.self_attention_context2(turns, turns, turns)
-            turns = self.layer_norm2(context + turns)    # [turn, batch, hidden]
-            context, _ = self.self_attention_context3(turns, turns, turns)
-            turns = self.layer_norm3(context + turns)    # [turn, batch, hidden]
 
+            hidden = torch.randn(self.utter_n_layer, batch_size, self.hidden_size)
+            if torch.cuda.is_available():
+                hidden = hidden.cuda()
+            
             for t in range(1, maxlen):
-                output, hidden = self.decoder(output, hidden, turns)
+                output, hidden = self.decoder(output, hidden, turns_output)
                 floss[t] = output
                 output = torch.max(output, 1)[1]
                 outputs[t] = output

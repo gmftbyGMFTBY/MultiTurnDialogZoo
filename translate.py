@@ -375,5 +375,6 @@ if __name__ == "__main__":
         
     # translate
     args_dict = vars(args)
-    translate(**args_dict)
+    with torch.no_grad():
+        translate(**args_dict)
     

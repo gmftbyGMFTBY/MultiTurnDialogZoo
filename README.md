@@ -2,6 +2,11 @@
 Tradtional RNN-based or HRED-based method model the context relationship implictly.
 Our motivation is to prove that explicit multi-round context modeling or explicit edge among the context utterances can effectively provide more meaningful information for dialogue generation.
 
+## TODO
+
+* CopyNet
+* Pointer Network
+
 ## Dataset 
 1. DailyDialog dataset
 2. Ubuntu corpus

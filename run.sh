@@ -40,6 +40,9 @@ elif [ $model = 'WSeq_RA' ]; then
 elif [ $model = 'MReCoSa' ]; then
     hierarchical=1
     graph=0
+elif [ $model = 'MReCoSa_RA' ]; then
+    hierarchical=1
+    graph=0
 elif [ $model = 'DSHRED' ]; then
     hierarchical=1
     graph=0
@@ -82,7 +85,7 @@ fi
 if [ $hierarchical = 1 ]; then
     maxlen=50
     tgtmaxlen=30
-    batch_size=256
+    batch_size=12
 elif [ $transformer_decode = 1 ]; then
     maxlen=200
     tgtmaxlen=25
@@ -404,7 +407,7 @@ elif [ $mode = 'translate' ]; then
         --gat_heads 8 \
         --teach_force 1
         
-    # exit    # comment this line for ppl perturbation test, or only translate the test dataset 
+    exit    # comment this line for ppl perturbation test, or only translate the test dataset 
     # 10 perturbation
     for i in {1..10}
     do
@@ -447,6 +450,7 @@ elif [ $mode = 'translate' ]; then
     done
 
 elif [ $mode = 'eval' ]; then
+    # before this mode, make sure you run the translate mode to generate the pred.txt file for evaluating.
     CUDA_VISIBLE_DEVICES="$CUDA" python eval.py \
         --model $model \
         --file ./processed/${dataset}/${model}/pred.txt
