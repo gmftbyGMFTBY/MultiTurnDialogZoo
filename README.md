@@ -132,7 +132,7 @@ Translate a batch of models
 
 Evaluate a batch of models
 ```bash
-# rewrite the file to evaluate the models and dataasets you want
+# the performance are redirected into the file `./processed/<dataset>/<model>/final_result.txt`
 ./run_batch_eval.sh 
 ```
 

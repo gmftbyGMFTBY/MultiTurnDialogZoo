@@ -4,8 +4,8 @@
 # The results file are written into the corresponding `pred.txt`
 cuda=$1
 success=()
-datasets=(dailydialog)
-models=(WSeq VHRED DSHRED)
+datasets=(empchat)
+models=(MReCoSa)
 for dataset in ${datasets[@]}
 do
     for model in ${models[@]}
@@ -22,6 +22,7 @@ do
 done
 
 # SHOW THE SUCCESS LIST
+echo "===== SUCCESS LIST ====="
 for item in ${success[@]}
 do
     echo "===== $item translate success ====="

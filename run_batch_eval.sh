@@ -19,6 +19,7 @@ do
 done
 
 # SHOW THE SUCCESS LIST
+echo "===== SUCCESS LIST ====="
 for item in ${success[@]}
 do
     echo "===== $item eval success ====="

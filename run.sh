@@ -306,7 +306,7 @@ elif [ $mode = 'train' ]; then
         --train_graph ./processed/$dataset/train-graph.pkl \
         --test_graph ./processed/$dataset/test-graph.pkl \
         --dev_graph ./processed/$dataset/dev-graph.pkl \
-        --pred ./processed/${dataset}/${model}/pred.txt \
+        --pred ./processed/${dataset}/${model}/pure-pred.txt \
         --min_threshold 0 \
         --max_threshold 100 \
         --seed 30 \
@@ -395,9 +395,9 @@ elif [ $mode = 'translate' ]; then
         --src_vocab $src_vocab \
         --tgt_vocab $tgt_vocab \
         --maxlen $maxlen \
-        --pred ./processed/${dataset}/${model}/pred.txt \
+        --pred ./processed/${dataset}/${model}/pure-pred.txt \
         --hierarchical $hierarchical \
-        --tgt_maxlen $tgt_maxlen \
+        --tgt_maxlen $tgtmaxlen \
         --graph $graph \
         --test_graph ./processed/$dataset/test-graph.pkl \
         --position_embed_size 30 \
@@ -408,7 +408,7 @@ elif [ $mode = 'translate' ]; then
         --gat_heads 8 \
         --teach_force 1
         
-    exit    # comment this line for ppl perturbation test, or only translate the test dataset 
+    # exit    # comment this line for ppl perturbation test, or only translate the test dataset 
     # 10 perturbation
     for i in {1..10}
     do
@@ -436,7 +436,7 @@ elif [ $mode = 'translate' ]; then
             --src_vocab $src_vocab \
             --tgt_vocab $tgt_vocab \
             --maxlen $maxlen \
-            --pred ./processed/${dataset}/${model}/pred.txt \
+            --pred ./processed/${dataset}/${model}/perturbation-${i}-pred.txt \
             --hierarchical $hierarchical \
             --tgt_maxlen $tgtmaxlen \
             --graph $graph \
@@ -454,10 +454,11 @@ elif [ $mode = 'eval' ]; then
     # before this mode, make sure you run the translate mode to generate the pred.txt file for evaluating.
     CUDA_VISIBLE_DEVICES="$CUDA" python eval.py \
         --model $model \
-        --file ./processed/${dataset}/${model}/pred.txt
+        --file ./processed/${dataset}/${model}/pure-pred.txt
         
 elif [ $mode = 'curve' ]; then
     # this part of codes is useless (tensorboard is all you need)
+    # already discard
     rm ./processed/${dataset}/${model}/conclusion.txt
     
     # for i in {1..30}
@@ -482,7 +483,7 @@ elif [ $mode = 'curve' ]; then
             --src_vocab ./processed/$dataset/iptvocab.pkl \
             --tgt_vocab ./processed/$dataset/optvocab.pkl \
             --maxlen $maxlen \
-            --pred ./processed/${dataset}/${model}/pred.txt \
+            --pred ./processed/${dataset}/${model}/pure-pred.txt \
             --hierarchical $hierarchical \
             --tgt_maxlen 50 \
             --graph $graph \
@@ -496,7 +497,7 @@ elif [ $mode = 'curve' ]; then
         echo "========== eval ==========" >> ./processed/${dataset}/${model}/conclusion.txt
         CUDA_VISIBLE_DEVICES="$CUDA" python eval.py \
             --model $model \
-            --file ./processed/${dataset}/${model}/pred.txt >> ./processed/${dataset}/${model}/conclusion.txt
+            --file ./processed/${dataset}/${model}/pure-pred.txt >> ./processed/${dataset}/${model}/conclusion.txt
             
     done
 
