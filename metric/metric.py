@@ -230,6 +230,36 @@ def cal_greedy_matching(x, y, dic):
     sum_y = sum_y / len_y
     score = (sum_x + sum_y) / 2
     return score
+
+
+def cal_greedy_matching_matrix(x, y, dic):
+    # x and y are the list of words
+    def vecterize(p):
+        vectors = []
+        for w in p:
+            if w in dic:
+                vectors.append(dic[w.lower()])
+        if not vectors:
+            vectors.append(np.random.randn(300))
+        return np.stack(vectors)
+    x = vecterize(x)     # [x, 300]
+    y = vecterize(y)     # [y, 300]
+    
+    len_x = len(x)
+    len_y = len(y)
+    
+    matrix = np.dot(x, y.T)    # [x, y]
+    matrix = matrix / np.linalg.norm(x, axis=1, keepdims=True)    # [x, 1]
+    matrix = matrix / np.linalg.norm(y, axis=1).reshape(1, -1)    # [1, y]
+    
+    x_matrix_max = np.mean(np.max(matrix, axis=1))    # [x]
+    y_matrix_max = np.mean(np.max(matrix, axis=0))    # [y]
+    
+    return (x_matrix_max + y_matrix_max) / 2
+    
+    
+    
+    
 # ========== End of our own embedding-based metric ========== #
 
 

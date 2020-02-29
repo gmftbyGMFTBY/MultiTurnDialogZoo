@@ -64,7 +64,8 @@ if __name__ == "__main__":
     for rr, cc in tqdm(list(zip(ref, tgt))):
         ea_sum_ = cal_embedding_average(rr, cc, dic)
         vx_sum_ = cal_vector_extrema(rr, cc, dic)
-        gm_sum += cal_greedy_matching(rr, cc, dic)
+        gm_sum += cal_greedy_matching_matrix(rr, cc, dic)
+        # gm_sum += cal_greedy_matching(rr, cc, dic)
         if ea_sum_ != 1 and vx_sum_ != 1:
             ea_sum += ea_sum_
             vx_sum += vx_sum_

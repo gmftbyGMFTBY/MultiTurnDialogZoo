@@ -327,7 +327,7 @@ def write_into_tb(pred_path, writer, writer_str, epoch, ppl, bleu_mode, model, d
     for rr, cc in tqdm(list(zip(ref, tgt))):
         ea_sum += cal_embedding_average(rr, cc, dic)
         vx_sum += cal_vector_extrema(rr, cc, dic)
-        # gm_sum += cal_greedy_matching(rr, cc, dic)
+        gm_sum += cal_greedy_matching_matrix(rr, cc, dic)
         counterp += 1
         
     # write into the tensorboard
@@ -343,6 +343,7 @@ def write_into_tb(pred_path, writer, writer_str, epoch, ppl, bleu_mode, model, d
     writer.add_scalar(f'{writer_str}-Performance/Ref-Distinct-2', rdistinct_2, epoch)
     writer.add_scalar(f'{writer_str}-Performance/Embedding-Average', ea_sum / counterp, epoch)
     writer.add_scalar(f'{writer_str}-Performance/Vector-Extrema', vx_sum / counterp, epoch)
+    writer.add_scalar(f'{writer_str}-Performance/Greedy-Matching', gm_sum / counterp, epoch)
     
     # write now
     writer.flush()
