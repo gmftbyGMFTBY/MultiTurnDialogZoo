@@ -290,8 +290,8 @@ def write_into_tb(pred_path, writer, writer_str, epoch, ppl, bleu_mode, model, d
     # ROUGE
     rouge_sum, bleu1_sum, bleu2_sum, bleu3_sum, bleu4_sum, counter = 0, 0, 0, 0, 0, 0
     for rr, cc in tqdm(list(zip(ref, tgt))):
-        # rouge_sum += cal_ROUGE(rr, cc)
-        rouge_sum += 0.01
+        rouge_sum += cal_ROUGE(rr, cc)
+        # rouge_sum += 0.01
         counter += 1
     
     # BlEU

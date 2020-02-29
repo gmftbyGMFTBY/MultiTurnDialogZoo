@@ -1,24 +1,28 @@
-# Multi-turn modeling
-Tradtional RNN-based or HRED-based method model the context relationship implictly.
-Our motivation is to prove that explicit multi-round context modeling or explicit edge among the context utterances can effectively provide more meaningful information for dialogue generation.
+# Multi-turn Dialog Zoo
+A batch of ready-to-use multi-turn or single-turn dialogue baselines.
+
+Welcome PRs and issues.
 
 ## TODO
-
 * CopyNet
 * Pointer Network
 
 ## Dataset 
+The preprocess script for these datasets can be found under `data/data_process` folder.
 1. DailyDialog dataset
 2. Ubuntu corpus
+3. EmpChat
+4. DSTC7-AVSD
+5. PersonaChat
 
 ## Metric
 1. PPL
 2. BLEU-1~4
-3. ROUGE
-4. Embedding Average, Vector Extrema, Greedy Maching   
-    __Greedy Matching is also very slow__ (optional)
+3. ROUGE-2
+4. Embedding-based metrics: Average, Extrema, Greedy (slow and optional)
 5. Distinct-1/2
-6. human annotation
+6. BERTScore
+7. [BERT-RUBER](https://github.com/gmftbyGMFTBY/RUBER-and-Bert-RUBER) 
 
 ## Requirements
 1. Pytorch 1.2+ (Transformer support & pack_padded update)
@@ -29,9 +33,9 @@ Our motivation is to prove that explicit multi-round context modeling or explici
 6. scipy
 7. sklearn
 8. [rouge](https://github.com/pltrdy/rouge)
-8. glove 300 dimension word embedding (Create the graph and embedding-based metric)
-9. pytorch_geometric (PyG 1.2)
-10. cuda 9.2 (match with PyG)
+8. **GoogleNews word2vec** or **glove 300 word2vec** (optinonal)
+9. pytorch_geometric (PyG 1.2) (optional)
+10. cuda 9.2 (match with PyG) (optinonal)
 11. tensorboard (for PyTorch 1.2+)
 12. perl (for running the multi-bleu.perl script)
 
@@ -54,23 +58,30 @@ The `__eou__` is used to separate the multiple sentences in the conversation con
 More details can be found in the small data case.
 
 ## How to use
+
+* Model names: `Seq2Seq, SeqSeq_MHA, HRED, HRED_RA, VHRED, WSeq, WSeq_RA, DSHRED, DSHRED_RA, HRAN, MReCoSa, MReCoSa_RA`
+* Dataset names: `daildydialog, ubuntu, dstc7, personachat, empchat`
+
+### 0. Ready
 Before running the following commands, make sure the essential folders are created:
 ```bash
-# $DATASET contains the name of the dataset that you want to process
 mkdir -p processed/$DATASET
 mkdir -p data/$DATASET
 mkdir -p tblogs/$DATASET
 mkdir -p ckpt/$DATASET
 ```
 
-Generate the vocab of the dataset
+Variable `DATASET` contains the name of the dataset that you want to process
+
+
+### 1. Generate the vocab of the dataset
 
 ```bash
 # default 25000 words
-./run.sh vocab dailydialog 
+./run.sh vocab <dataset>
 ```
 
-Generate the graph of the dataset
+### 2. Generate the graph of the dataset (optional)
 
 ```bash
 # only MTGCN and GatedGCN need to create the graph
@@ -87,453 +98,68 @@ Train the model (HRED / WSeq / Seq2Seq / Transformer / MReCoSa) on the dataset (
 tensorboard --logdir tblogs
 ```
 
+### 3. Check the information about the preprocessed dataset
+
+Show the length of the utterances, turns of the multi-turn setting and so on.
+```bash
+./run.sh stat <dataset>
+```
+
+### 4. Train N-gram LM (Discard)
 Train the N-gram Language Model by NLTK (Lidstone with 0.5 gamma, default n-gram is 3):
 
 ```bash
 # train the N-gram Language model by NLTK
-./run.sh lm dailydialog
+./run.sh lm <dataset>
 ```
 
-Translate the test dataset and caulculate the test perplexity by using n-gram model:
+### 5. Train the model on corresponding dataset
+
+```bash
+./run.sh train <dataset> <model> <cuda>
+```
+
+### 6. Translate the test dataset:
 
 ```bash
 # translate mode, dataset dialydialog, model HRED on 4th GPU
-./run.sh translate dailydialog HRED 4
+./run.sh translate <dataset> <model> <cuda>
 ```
 
-Evaluate the result of the translated utterances
+### 7. Evaluate the result of the translated utterances
 
 ```bash
 # get the BLEU and Distinct result of the generated sentences on 4th GPU (BERTScore need it)
-./run.sh eval dailydialog HRED 4
+./run.sh eval <dataset> <model>
 ```
 
-Get the curve of all the training checkpoints
+### 8. Get the curve of all the training checkpoints (discard, tensorboard is all you need)
 
 ```bash
 # draw the performance curve, but actually, you can get all the information from the tensorboard
-./run.sh curve dailydialog MTGCN 4
+./run.sh curve <dataset> <model> <cuda>
 ```
 
-Perturbate the source test dataset
+### 9. Perturbate the source test dataset
+
+Refer to the paper: `Do Neural Dialog Systems Use the Conversation History Effectively? An Empirical Study`
 
 ```bash
 # 10 mode for perturbation
-./run.sh perturbation dailydialog
+./run.sh perturbation <dataset>
 ```
 
-## Experiment
+## Ready-to-use Models
+* Seq2Seq-attn: `Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation`
+* Seq2Seq-MHA: `Attention is All you Need`. It should be noted that vanilla Transformer is very hard to obtain the good performance on these datasets. In order to make sure the stable performance, i leverage the multi-head self-attention (1 layer, you can change it) on the RNN-based Seq2Seq-attn, which shows the better performance.
+* HRED: `Building End-To-End Dialogue Systems Using Generative Hierarchical Neural Network Models`. Enhanced HRED with the utterance-level attention.
+* HRED-WA: Building the word-level attention on HRED model.
+* WSeq: `How to Make Context More Useful? An Empirical Study on Context-Aware Neural Conversational Models`
+* WSeq-WA: Building the word-level attention on WSeq model.
+* VHRED: `A Hierarchical Latent Variable Encoder-Decoder Model for Generating Dialogues`, without BOW loss (still in development, welcome PR)
+* DSHRED: `Context-Sensitive Generation of Open-Domain Conversational Responses`, dynamic and static attention mechanism on HRED
+* DSHRED-WA: Building the word-level attention on DSHRED
+* ReCoSa: `ReCoSa: Detecting the Relevant Contexts with Self-Attention for Multi-turn Dialogue Generation`. It should be noted that this implementation here is a little bit different from the original codes, but more powerful and practical (3 layer multi-head self-attention but only 1 layer in the orginal paper).
+* ReCoSa: Building word-level attention on ReCoSa
+* HRAN: `Hierarchical Recurrent Attention Network for Response Generation`, actually it's the same as the HRED with word-level attention mechanism.
 
-### 1. Models
-* __HRED-attn__: 2016 hierarchical seq2seq model with attention on context encoder
-* __WSeq__: 2017 ACL modified HRED model with the Cosine attention weight on conversation context
-* __DSHRED__: 2018 COLING Dynamic and Static attention for HRED
-* __ReCoSa__: 2019 ACL state-of-the-art generatice dialogue method, PPL is larger than the ReCoSa paper(ACL 2019) because of the more open dialogue topic (more open, harder to match with the ground-truth)
-* __MTGCN__: GCN for context modeling
-* __GatedGCN__: Gated GCN for context modeling, in paper we called it **GatedGNN**
-
-### 2. Automatic evaluation
-
-<table border="1" align="center">
-  <tr>
-    <th rowspan="2">Models</th>
-    <th colspan="8">DailyDialog</th>
-  </tr>
-  <tr>
-    <td>PPL</td>
-    <td>BLEU1</td> 
-    <td>BLEU2</td>
-    <td>BLEU3</td>
-    <td>BLEU4</td>
-    <td>BERTScore</td>
-    <td>Dist-1</td>
-    <td>Dist-2</td>
-  </tr>
-  <tr>
-    <td>Seq2Seq-attn</td>
-    <td><strong></strong></td>
-    <td><strong></strong></td>
-    <td><strong></strong></td>
-    <td><strong><strong></td>
-    <td><strong><strong></td>
-    <td><strong><strong></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>HRED-attn</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>WSeq</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>ReCoSa</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>MTGCN</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>GatedGCN</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-</table>
-
-<table border="1" align="center">
-  <tr>
-    <th rowspan="2">Models</th>
-    <th colspan="8">Ubuntu</th>
-  </tr>
-  <tr>
-    <td>PPL</td>
-    <td>BLEU1</td> 
-    <td>BLEU2</td>
-    <td>BLEU3</td>
-    <td>BLEU4</td>
-    <td>BERTScore</td>
-    <td>Dist-1</td>
-    <td>Dist-2</td>
-  </tr>
-  <tr>
-    <td>Seq2Seq-attn</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>HRED-attn</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>WSeq</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>ReCoSa</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>MTGCN</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>GatedGCN</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-</table>
-
-Performance Curve:
-
-        
-### 3. Human judgments
-        
-<table>
-  <tr>
-    <th rowspan="2">Baselines</th>
-    <th colspan="3">GatedGCN</th>
-  </tr>
-  <tr>
-    <td>win%</td>
-    <td>tie%</td>
-    <td>loss%</td>
-  </tr>
-  <tr>
-    <td>HRED-attn</td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>WSeq</td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>ReCoSa</td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>MTGCN</td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-</table>
-
-### 4. Graph ablation analyse
-1. complete graph
-2. w/o user dependency edge
-3. w/o sequence dependency edge
-4. difference way to construct the graph and the influence for the performance
-        
-Note: More edges better performance
-        
-### 5. PPL Perturbation analyse
-More details of this experiment can be found in [ACL 2019 Short paper for context analyse in multi-turn dialogue systems](https://arxiv.org/pdf/1906.01603.pdf).
-        
-        
-#### 5.1 Dailydialog
-<table>
-  <tr>
-    <th rowspan="2">Models</th>
-    <th rowspan="2">Test PPL</th>
-    <th colspan="5">Utterance-level</th>
-    <th colspan="5">Word-level</th>
-  </tr>
-  <tr>
-    <td>1</td>
-    <td>2</td>
-    <td>3</td>
-    <td>4</td>
-    <td>5</td>
-    <td>6</td>
-    <td>7</td>
-    <td>8</td>
-    <td>9</td>
-    <td>10</td>
-  </tr>
-  <tr>
-    <td>HRED-attn</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>WSeq</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>ReCoSa</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>MTGCN</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>GatedGCN</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-</table>
-            
-#### 5.2 Ubuntu
-        
-<table>
-  <tr>
-    <th rowspan="2">Models</th>
-    <th rowspan="2">Test PPL</th>
-    <th colspan="5">Utterance-level</th>
-    <th colspan="5">Word-level</th>
-  </tr>
-  <tr>
-    <td>1</td>
-    <td>2</td>
-    <td>3</td>
-    <td>4</td>
-    <td>5</td>
-    <td>6</td>
-    <td>7</td>
-    <td>8</td>
-    <td>9</td>
-    <td>10</td>
-  </tr>
-  <tr>
-    <td>HRED-attn</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>WSeq</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>ReCoSa</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>MTGCN</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>GatedGCN</td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-</table>

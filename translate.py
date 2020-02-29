@@ -28,8 +28,11 @@ from model.KgCVAE import KgCVAE
 from model.HRAN import HRAN
 from model.HRAN_ablation import HRAN_ablation
 from model.WSeq import WSeq
+from model.WSeq_RA import WSeq_RA
 from model.DSHRED import DSHRED
+from model.DSHRED_RA import DSHRED_RA
 from model.MReCoSa import MReCoSa
+from model.MReCoSa_RA import MReCoSa_RA
 from model.MTGCN import MTGCN
 from model.MTGAT import MTGAT
 from model.GatedGCN import GatedGCN
@@ -125,8 +128,24 @@ def translate(**kwargs):
                      utter_n_layer=kwargs['utter_n_layer'], 
                      dropout=kwargs['dropout'],
                      pretrained=pretrained)
+    elif kwargs['model'] == 'DSHRED_RA':
+        net = DSHRED_RA(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
+                     kwargs['utter_hidden'], kwargs['context_hidden'],
+                     kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                     pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                     utter_n_layer=kwargs['utter_n_layer'], 
+                     dropout=kwargs['dropout'],
+                     pretrained=pretrained)
     elif kwargs['model'] == 'WSeq':
         net = WSeq(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
+                   kwargs['utter_hidden'], kwargs['context_hidden'],
+                   kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
+                   pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
+                   utter_n_layer=kwargs['utter_n_layer'], 
+                   dropout=kwargs['dropout'],
+                   pretrained=pretrained)
+    elif kwargs['model'] == 'WSeq_RA':
+        net = WSeq_RA(kwargs['embed_size'], len(src_w2idx), len(tgt_w2idx),
                    kwargs['utter_hidden'], kwargs['context_hidden'],
                    kwargs['decoder_hidden'], teach_force=kwargs['teach_force'],
                    pad=tgt_w2idx['<pad>'], sos=tgt_w2idx['<sos>'], 
@@ -143,6 +162,12 @@ def translate(**kwargs):
                           position_embed_size=kwargs['position_embed_size'])
     elif kwargs['model'] == 'MReCoSa':
         net = MReCoSa(len(src_w2idx), 512, len(tgt_w2idx), 512, 512,
+                      teach_force=kwargs['teach_force'], pad=tgt_w2idx['<pad>'],
+                      sos=tgt_w2idx['<sos>'], dropout=kwargs['dropout'],
+                      utter_n_layer=kwargs['utter_n_layer'], 
+                      pretrained=pretrained)
+    elif kwargs['model'] == 'MReCoSa_RA':
+        net = MReCoSa_RA(len(src_w2idx), 512, len(tgt_w2idx), 512, 512,
                       teach_force=kwargs['teach_force'], pad=tgt_w2idx['<pad>'],
                       sos=tgt_w2idx['<sos>'], dropout=kwargs['dropout'],
                       utter_n_layer=kwargs['utter_n_layer'], 

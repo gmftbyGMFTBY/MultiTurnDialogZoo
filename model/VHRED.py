@@ -18,7 +18,8 @@ from .layers import *
 Refer to: https://github.com/lipiji/dialogue-hred-vhred
 Only VHRED need to bind the encoder and decoder embeeding layer
 
-NOTE: Performance should be better than HRED
+NOTE(1): Performance should be better than HRED
+NOTE(2): Due to the latent variable, word-level attention mechanism cannot be used in VHRED and KgCVAE
 '''
 
 

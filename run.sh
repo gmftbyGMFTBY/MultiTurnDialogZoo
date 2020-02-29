@@ -85,7 +85,7 @@ fi
 if [ $hierarchical = 1 ]; then
     maxlen=50
     tgtmaxlen=30
-    batch_size=12
+    batch_size=128
 elif [ $transformer_decode = 1 ]; then
     maxlen=200
     tgtmaxlen=25
@@ -93,7 +93,7 @@ elif [ $transformer_decode = 1 ]; then
 else
     maxlen=150
     tgtmaxlen=25
-    batch_size=28
+    batch_size=64
 fi
 
 # ========== Ready Perfectly ========== #
@@ -350,6 +350,7 @@ elif [ $mode = 'train' ]; then
 
 elif [ $mode = 'translate' ]; then
     rm ./processed/$dataset/$model/pertub-ppl.txt
+    rm ./processed/$dataset/$model/pred.txt
     
     if [ $model = 'Transformer' ]; then
         # other repo set the 0.1 as the dropout ratio, remain it
@@ -396,7 +397,7 @@ elif [ $mode = 'translate' ]; then
         --maxlen $maxlen \
         --pred ./processed/${dataset}/${model}/pred.txt \
         --hierarchical $hierarchical \
-        --tgt_maxlen 50 \
+        --tgt_maxlen $tgt_maxlen \
         --graph $graph \
         --test_graph ./processed/$dataset/test-graph.pkl \
         --position_embed_size 30 \

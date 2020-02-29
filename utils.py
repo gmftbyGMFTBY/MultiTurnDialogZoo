@@ -889,8 +889,11 @@ if __name__ == "__main__":
                        bidir=args.bidir, lang=args.lang, fully=args.fully,
                        self_loop=args.self_loop)
     elif mode == 'stat':
-        analyse_graph(f'./processed/{args.dataset}/{args.split}-graph.pkl',
-                      hops=args.hops)
+        try:
+            analyse_graph(f'./processed/{args.dataset}/{args.split}-graph.pkl',
+                          hops=args.hops)
+        except:
+            pass
         analyse_dataset(args.dataset, args.split)
     elif mode == 'perturbation':
         if args.perturbation_in and args.perturbation_out:
