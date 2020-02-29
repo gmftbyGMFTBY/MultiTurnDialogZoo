@@ -33,9 +33,9 @@ The preprocess script for these datasets can be found under `data/data_process` 
 6. scipy
 7. sklearn
 8. [rouge](https://github.com/pltrdy/rouge)
-8. **GoogleNews word2vec** or **glove 300 word2vec** (optinonal)
+8. **GoogleNews word2vec** or **glove 300 word2vec** (optional)
 9. pytorch_geometric (PyG 1.2) (optional)
-10. cuda 9.2 (match with PyG) (optinonal)
+10. cuda 9.2 (match with PyG) (optional)
 11. tensorboard (for PyTorch 1.2+)
 12. perl (for running the multi-bleu.perl script)
 
@@ -86,16 +86,7 @@ Variable `DATASET` contains the name of the dataset that you want to process
 ```bash
 # only MTGCN and GatedGCN need to create the graph
 # zh or en
-./run.sh graph dailydialog zh 0 
-```
-
-Train the model (HRED / WSeq / Seq2Seq / Transformer / MReCoSa) on the dataset (dailydialog / Ubuntu):
-
-```bash
-# train mode, dataset dailydialog, model HRED on 4th GPU
-# max epochs is 100. You can simply stop the training when the performance shown in tensorboard is flatten (ctrl-c). 
-./run.sh train dailydialog HRED 4
-tensorboard --logdir tblogs
+./run.sh graph <dataset> <zh/en> <cuda>
 ```
 
 ### 3. Check the information about the preprocessed dataset
@@ -126,11 +117,23 @@ Train the N-gram Language Model by NLTK (Lidstone with 0.5 gamma, default n-gram
 ./run.sh translate <dataset> <model> <cuda>
 ```
 
+Translate a batch of models
+```bash
+# rewrite the models and datasets you want to translate
+./run_batch_translate.sh <cuda>
+```
+
 ### 7. Evaluate the result of the translated utterances
 
 ```bash
 # get the BLEU and Distinct result of the generated sentences on 4th GPU (BERTScore need it)
 ./run.sh eval <dataset> <model>
+```
+
+Evaluate a batch of models
+```bash
+# rewrite the file to evaluate the models and dataasets you want
+./run_batch_eval.sh 
 ```
 
 ### 8. Get the curve of all the training checkpoints (discard, tensorboard is all you need)
