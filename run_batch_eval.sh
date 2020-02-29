@@ -2,7 +2,7 @@
 # RUN EVAL AT A TIME
 success=()
 datasets=(dailydialog)
-models=(WSeq VHRED DSHRED)
+models=(VHRED DSHRED)
 for dataset in ${datasets[@]}
 do
     for model in ${models[@]}

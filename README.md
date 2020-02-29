@@ -166,3 +166,7 @@ Refer to the paper: `Do Neural Dialog Systems Use the Conversation History Effec
 * ReCoSa: Building word-level attention on ReCoSa
 * HRAN: `Hierarchical Recurrent Attention Network for Response Generation`, actually it's the same as the HRED with word-level attention mechanism.
 
+
+## FAQ
+1. No module named 'torch_geometric'  
+    Just comment the `import MTGCN, GatedGCN, layers` lines in train.py 
