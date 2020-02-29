@@ -17,7 +17,10 @@ import ipdb
 import random
 from tqdm import tqdm
 from scipy.linalg import norm
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+try:
+    from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+except:
+    print(f'[!] cannot load module sklearn, ignore it')
 from transformers import BertTokenizer
 
 import nltk

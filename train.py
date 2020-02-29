@@ -36,10 +36,14 @@ from model.DSHRED import DSHRED
 from model.DSHRED_RA import DSHRED_RA
 from model.MReCoSa import MReCoSa
 from model.MReCoSa_RA import MReCoSa_RA
-from model.MTGCN import MTGCN
-from model.MTGAT import MTGAT
-from model.GatedGCN import GatedGCN
-from model.layers import *
+
+try:
+    from model.MTGCN import MTGCN
+    from model.MTGAT import MTGAT
+    from model.GatedGCN import GatedGCN
+    from model.layers import *
+except:
+    print(f'[!] cannot find the module "torch_geometric", ignore it')
 
 
 def train(train_iter, net, optimizer, vocab_size, pad, 
@@ -75,6 +79,7 @@ def train(train_iter, net, optimizer, vocab_size, pad,
             # VHRED model, KL divergence add to the loss
             if len(output) == 2:
                 output, kl_div = output
+                bow_loss = None
             elif len(output) == 3:
                 output, kl_div, bow_loss = output
             else:
@@ -642,15 +647,13 @@ def main(**kwargs):
             patience += 1
                           
         # checkpoint state
-        optim_state = optimizer.state_dict()
-        state = {'net': net.state_dict(), 'opt': optim_state, 
-                 'epoch': epoch, 'patience': patience}
-        torch.save(state, 
-                       f'./ckpt/{kwargs["dataset"]}/{kwargs["model"]}/vloss_{val_loss}_epoch_{epoch}.pt')
-
-        # if patience > kwargs['patience']:
-        #     print(f'Early Stop {kwargs["patience"]} at epoch {epoch}')
-        #     break
+        # try not save all the checkpoints
+        if epoch > int(kwargs['epochs'] * 0.8):
+            optim_state = optimizer.state_dict()
+            state = {'net': net.state_dict(), 'opt': optim_state, 
+                     'epoch': epoch, 'patience': patience}
+            torch.save(state, 
+                           f'./ckpt/{kwargs["dataset"]}/{kwargs["model"]}/vloss_{val_loss}_epoch_{epoch}.pt')
         
         # translate on test dataset
         with torch.no_grad():
@@ -672,10 +675,7 @@ def main(**kwargs):
             net.teach_force = teacher_force_ratio
         
         # lr schedule change, monitor the evaluation loss
-        if kwargs['transformer_decode'] == 0:
-            scheduler.step(val_loss)
-        # else:
-        #     scheduler.step()
+        scheduler.step(val_loss)
         
 
     pbar.close()

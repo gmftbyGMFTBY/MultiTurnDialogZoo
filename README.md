@@ -16,8 +16,8 @@ The preprocess script for these datasets can be found under `data/data_process` 
 5. PersonaChat
 
 ## Metric
-1. PPL
-2. BLEU-1~4
+1. PPL: test perplexity
+2. BLEU(1-4): nlg-eval version or multi-bleu.perl or nltk
 3. ROUGE-2
 4. Embedding-based metrics: Average, Extrema, Greedy (slow and optional)
 5. Distinct-1/2
@@ -26,12 +26,12 @@ The preprocess script for these datasets can be found under `data/data_process` 
 
 ## Requirements
 1. Pytorch 1.2+ (Transformer support & pack_padded update)
-2. Python 3.6+
+2. Python 3.6.1+
 3. tqdm
 4. numpy
 5. nltk 3.4+
 6. scipy
-7. sklearn
+7. sklearn (optional)
 8. [rouge](https://github.com/pltrdy/rouge)
 8. **GoogleNews word2vec** or **glove 300 word2vec** (optional)
 9. pytorch_geometric (PyG 1.2) (optional)
@@ -168,5 +168,3 @@ Refer to the paper: `Do Neural Dialog Systems Use the Conversation History Effec
 
 
 ## FAQ
-1. No module named 'torch_geometric'  
-    Just comment the `import MTGCN, GatedGCN, layers` lines in train.py 
