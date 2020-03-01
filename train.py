@@ -271,7 +271,7 @@ def translate(data_iter, net, **kwargs):
     l = round(total_loss / batch_num, 4)
     print(f'[!] write the translate result into {kwargs["pred"]}')
     print(f'[!] test loss: {l}, test ppl: {round(math.exp(l), 4)}', 
-          file=open(f'./processed/{kwargs["dataset"]}/{kwargs["model"]}/ppl.txt', 'a'))
+          file=open(f'./processed/{kwargs["dataset"]}/{kwargs["model"]}/trainlog.txt', 'a'))
     
     return math.exp(l)
 

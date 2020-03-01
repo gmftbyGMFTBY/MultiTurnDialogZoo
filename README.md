@@ -6,6 +6,9 @@ Welcome PRs and issues.
 ## TODO
 * CopyNet
 * Pointer Network
+* Memory Network
+* HVMN
+* Pure Transformer (in development, poor performance)
 
 ## Dataset 
 The preprocess script for these datasets can be found under `data/data_process` folder.
@@ -127,13 +130,13 @@ Translate a batch of models
 
 ```bash
 # get the BLEU and Distinct result of the generated sentences on 4th GPU (BERTScore need it)
-./run.sh eval <dataset> <model>
+./run.sh eval <dataset> <model> <cuda>
 ```
 
 Evaluate a batch of models
 ```bash
 # the performance are redirected into the file `./processed/<dataset>/<model>/final_result.txt`
-./run_batch_eval.sh 
+./run_batch_eval.sh <cuda>
 ```
 
 ### 8. Get the curve of all the training checkpoints (discard, tensorboard is all you need)
@@ -149,7 +152,7 @@ Refer to the paper: `Do Neural Dialog Systems Use the Conversation History Effec
 
 ```bash
 # 10 mode for perturbation
-./run.sh perturbation <dataset>
+./run.sh perturbation <dataset> <zh/en>
 ```
 
 ## Ready-to-use Models

@@ -1,14 +1,15 @@
 #!/bin/bash
 # RUN EVAL AT A TIME
+cuda=$1
 success=()
-datasets=(dailydialog)
-models=(VHRED DSHRED)
+datasets=(empchat)
+models=(Seq2Seq MReCoSa)
 for dataset in ${datasets[@]}
 do
     for model in ${models[@]}
     do
         echo "===== EVAL $dataset - $model EVAL =====" 
-        ./run.sh eval $dataset $model > ./processed/$dataset/$model/final_result.txt
+        ./run.sh eval $dataset $model $cuda > ./processed/$dataset/$model/final_result.txt
         if [ $? -ne 0 ]; then
             echo "===== FAILED ====="
         else

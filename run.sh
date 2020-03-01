@@ -248,11 +248,11 @@ elif [ $mode = 'train' ]; then
         echo "[!] ./processed/$dataset/$model: already exists"
     fi
     
-    # delete ppl.txt
-    if [ ! -f "./processed/$dataset/$model/ppl.txt" ]; then
-        echo "[!] ./processed/$dataset/$model/ppl.txt doesn't exist"
+    # delete traninglog.txt
+    if [ ! -f "./processed/$dataset/$model/trainlog.txt" ]; then
+        echo "[!] ./processed/$dataset/$model/trainlog.txt doesn't exist"
     else
-        rm ./processed/$dataset/$model/ppl.txt
+        rm ./processed/$dataset/$model/trainlog.txt
     fi
     
     # delete metadata.txt
@@ -408,7 +408,7 @@ elif [ $mode = 'translate' ]; then
         --gat_heads 8 \
         --teach_force 1
         
-    # exit    # comment this line for ppl perturbation test, or only translate the test dataset 
+    exit    # comment this line for ppl perturbation test, or only translate the test dataset 
     # 10 perturbation
     for i in {1..10}
     do

@@ -85,3 +85,4 @@ if __name__ == "__main__":
     print(f'EA: {round(ea_sum / counterp, 4)}')
     print(f'VX: {round(vx_sum / counterp, 4)}')
     print(f'GM: {round(gm_sum / counterp, 4)}')
+    # print(f'BERTScore: {round(bert_scores, 4)}')

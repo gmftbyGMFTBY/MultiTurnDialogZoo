@@ -7,7 +7,7 @@ import argparse
 import codecs
 import numpy as np
 import math
-# from bert_score import score
+from bert_score import score
 from rouge import Rouge
 import os, re
 import ipdb
@@ -84,9 +84,7 @@ def cal_ROUGE(refer, candidate):
 
 def cal_BERTScore(refer, candidate):
     # too slow, fuck it
-    _, _, bert_scores = score(candidate, refer, lang='en')
-    # _, _, bert_scores = score(candidate, refer, 
-    #                           bert="bert-base-uncased", no_idf=True)
+    _, _, bert_scores = score(candidate, refer, lang='en', rescale_with_baseline=True)
     bert_scores = bert_scores.tolist()
     bert_scores = [0.5 if math.isnan(score) else score for score in bert_scores]
     return np.mean(bert_scores)

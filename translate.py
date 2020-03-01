@@ -33,10 +33,14 @@ from model.DSHRED import DSHRED
 from model.DSHRED_RA import DSHRED_RA
 from model.MReCoSa import MReCoSa
 from model.MReCoSa_RA import MReCoSa_RA
-from model.MTGCN import MTGCN
-from model.MTGAT import MTGAT
-from model.GatedGCN import GatedGCN
-from model.layers import *
+
+try:
+    from model.MTGCN import MTGCN
+    from model.MTGAT import MTGAT
+    from model.GatedGCN import GatedGCN
+    from model.layers import *
+except:
+    print(f'[!] cannot load module torch_geometric, ignore it')
 
 
 def translate(**kwargs):

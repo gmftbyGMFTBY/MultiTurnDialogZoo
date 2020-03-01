@@ -5,7 +5,7 @@
 cuda=$1
 success=()
 datasets=(empchat)
-models=(MReCoSa)
+models=(Seq2Seq MReCoSa)
 for dataset in ${datasets[@]}
 do
     for model in ${models[@]}
