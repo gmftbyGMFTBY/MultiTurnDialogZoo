@@ -408,7 +408,7 @@ elif [ $mode = 'translate' ]; then
         --gat_heads 8 \
         --teach_force 1
         
-    exit    # comment this line for ppl perturbation test, or only translate the test dataset 
+    # exit    # comment this line for ppl perturbation test, or only translate the test dataset 
     # 10 perturbation
     for i in {1..10}
     do

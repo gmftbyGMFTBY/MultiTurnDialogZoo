@@ -4,11 +4,12 @@ A batch of ready-to-use multi-turn or single-turn dialogue baselines.
 Welcome PRs and issues.
 
 ## TODO
-* CopyNet
-* Pointer Network
 * Memory Network
 * HVMN
 * Pure Transformer (in development, poor performance)
+* GAN-based multi-turn dialogue generation
+* RL-based fine-tuning dialogue models
+* Fix the architecture of the decoder (add the context vector $c$ and last token embedding $y_{t-1}$ for predicting $y_t$)
 
 ## Dataset 
 The preprocess script for these datasets can be found under `data/data_process` folder.

@@ -51,9 +51,7 @@ if __name__ == "__main__":
 
     # BERTScore < 512 for bert
     # Fuck BERTScore, slow as the snail, fuck it
-    # ref = [' '.join(i) for i in ref]
-    # tgt = [' '.join(i) for i in tgt]
-    # bert_scores = cal_BERTScore(ref, tgt)
+    bert_scores = cal_BERTScore(refs, tgts)
     
     # Embedding-based metric: Embedding Average (EA), Vector Extrema (VX), Greedy Matching (GM)
     # load the dict
@@ -85,4 +83,4 @@ if __name__ == "__main__":
     print(f'EA: {round(ea_sum / counterp, 4)}')
     print(f'VX: {round(vx_sum / counterp, 4)}')
     print(f'GM: {round(gm_sum / counterp, 4)}')
-    # print(f'BERTScore: {round(bert_scores, 4)}')
+    print(f'BERTScore: {round(bert_scores, 4)}')
