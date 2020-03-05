@@ -330,7 +330,7 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
     
     For dataset DSTC7, [sequential edges, last_utterence edges, user edges, self-loop]
     
-    For dataset Dailydialog, [sequential edges, bidir last utterence edges]
+    For Dailydialog dataset, [sequentail edge, bidir first utterance edge, bidir last utterence edges]
     
     For personachat dataset, [last utterence edges, correlation edges (threshold=0.8)]
     
@@ -378,6 +378,20 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
     # all for the last query
     # NOTE: Remember to reverse the direction
     query = turn_len-1
+    for i in range(turn_len):
+        # if edges.get((i, query), None):
+        if edges.get((query, i), None):
+            # edges[(i, query)].append(u_w)
+            edges[(query, i)].append(u_w)
+        else:
+            # edges[(i, query)] = [u_w]
+            edges[(query, i)] = [u_w]
+        if edges.get((i, query), None):
+            edges[(i, query)].append(u_w)
+        else:
+            edges[(i, query)] = [u_w]
+            
+    query = 0
     for i in range(turn_len):
         # if edges.get((i, query), None):
         if edges.get((query, i), None):
