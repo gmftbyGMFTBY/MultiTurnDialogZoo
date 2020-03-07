@@ -85,7 +85,7 @@ fi
 if [ $hierarchical = 1 ]; then
     maxlen=50
     tgtmaxlen=30
-    batch_size=128
+    batch_size=64
 elif [ $transformer_decode = 1 ]; then
     maxlen=200
     tgtmaxlen=25

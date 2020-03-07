@@ -90,10 +90,14 @@ class Decoder(nn.Module):
         self.pos_emb = PositionEmbedding(embed_size, dropout=dropout)
         self.self_attention_context1 = nn.MultiheadAttention(embed_size, 8)
         self.layer_norm1 = nn.LayerNorm(embed_size)
+        self.droput1 = nn.Dropout(p=dropout)
         self.self_attention_context2 = nn.MultiheadAttention(embed_size, 8)
         self.layer_norm2 = nn.LayerNorm(embed_size)
-        self.self_attention_context3 = nn.MultiheadAttention(embed_size, 8)
-        self.layer_norm3 = nn.LayerNorm(embed_size)
+        self.droput2 = nn.Dropout(p=dropout)
+        # self.self_attention_context3 = nn.MultiheadAttention(embed_size, 8)
+        # self.layer_norm3 = nn.LayerNorm(embed_size)
+        # self.droput3 = nn.Dropout(p=dropout)
+        
         self.self_attention = nn.MultiheadAttention(hidden_size, 8)
         self.word_level_attn = Attention(embed_size)
         self.init_weight()
@@ -124,15 +128,18 @@ class Decoder(nn.Module):
         context, _ = self.self_attention_context1(context_output,
                                                   context_output,
                                                   context_output)
+        context = self.droput1(context)
         context_output = self.layer_norm1(context + context_output)    # [turn, batch, hidden]
         context, _ = self.self_attention_context2(context_output,
                                                   context_output,
                                                   context_output)
+        context = self.droput2(context)
         context_output = self.layer_norm2(context + context_output)    # [turn, batch, hidden]
-        context, _ = self.self_attention_context3(context_output,
-                                                  context_output,
-                                                  context_output)
-        context_output = self.layer_norm3(context + context_output)    # [turn, batch, hidden]
+        # context, _ = self.self_attention_context3(context_output,
+        #                                           context_output,
+        #                                           context_output)
+        # context = self.droput3(context)
+        # context_output = self.layer_norm3(context + context_output)    # [turn, batch, hidden]
 
         # attn_weight
         # context: [1, batch, embed], attn_weight: [batch, 1, src_seq_len]
