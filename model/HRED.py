@@ -167,7 +167,7 @@ class Decoder(nn.Module):
         # output = torch.cat([output, context], 1)    # [batch, 2 * hidden]
         output = self.out(output)     # [batch, output_size]
         output = F.log_softmax(output, dim=1)
-        return output, hidden
+        return output, hidden, attn_weights.squeeze()
 
 
 class HRED(nn.Module):
@@ -233,6 +233,7 @@ class HRED(nn.Module):
         # predict for test dataset, return outputs: [maxlen, batch_size]
         # src: [turn, max_len, batch_size], lengths: [turn, batch_size]
         with torch.no_grad():
+            attention_map = np.zeros((maxlen, len(src)))
             turn_size, batch_size = len(src), src[0].size(1)
             outputs = torch.zeros(maxlen, batch_size)
             floss = torch.zeros(maxlen, batch_size, self.output_size)
@@ -254,17 +255,15 @@ class HRED(nn.Module):
             if torch.cuda.is_available():
                 output = output.cuda()
 
-            try:
-                for i in range(1, maxlen):
-                    output, hidden = self.decoder(output, hidden, context_output)
-                    floss[i] = output
-                    output = output.max(1)[1]
-                    outputs[i] = output
-            except:
-                ipdb.set_trace()
+            for i in range(1, maxlen):
+                output, hidden, attn = self.decoder(output, hidden, context_output)
+                attention_map[i] = attn.cpu().numpy()
+                floss[i] = output
+                output = output.max(1)[1]
+                outputs[i] = output
 
             if loss:
-                return outputs, floss
+                return outputs, floss, attention_map
             else:
                 return outputs
 

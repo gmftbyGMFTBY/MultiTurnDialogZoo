@@ -1,0 +1,440 @@
+- src: user0 a man in a kitchen area examines a container of something white __eou__ user0 he opens the container , plays with it , closes it and puts it back on the shelf __eou__ user0 how many people are in the video ?
+- ref: user1 you only see one man but there is the voice of woman in the background
+- tgt: user0 there is only one man in the video .
+
+- src: user0 this guy is wasting time __eou__ user0 he is sitting in a corner and takes four of five drinks out of his stainless steel glass and looks around and fidgets a fair bit __eou__ user0 how many people can you see ?
+- ref: user1 there is only one person
+- tgt: user0 i can see only one man in the video .
+
+- src: user0 one person holds a remote and smiles , that person is watching television while another is taking snacks out of a bag __eou__ user0 a man is watching tv while a woman is taking snacks out of a bag and sitting it on a chair __eou__ user0 is there only one person in the video ?
+- ref: user1 no there are two people in the video
+- tgt: user0 yes there is only one person
+
+- src: user0 person sitting on a bed on the floor looks threw a bag and pulls out two shoes , then puts the bag away __eou__ user0 a man walks into a room removes his shoes , he throws down a bag and sit down at a mattress __eou__ user0 what is happening ?
+- ref: user1 the man sits on the floor near the bed
+- tgt: user0 a man walks in a room and sits down on a bed
+
+- src: user0 there is a male holding a towel in his right hand , he walks into the room and walks past the mirror , comes back and continue to examine his self in the mirror a few more times __eou__ user0 a guy stands in front of a mirror holding a towel while he stares at his feet __eou__ user0 so how does this video start out ?
+- ref: user1 guy is walking by mirror
+- tgt: user0 a man is in a mirror holding a towel in his hands .
+
+- src: user0 a person is singing as a man fixes a door lock then watches a video on his phone while wearing a hat __eou__ user0 a person standing fixing the door knob lock and taking a picture on it __eou__ user0 how did the video started ?
+- ref: user1 he is working on door
+- tgt: user0 a person is standing by a door opening a door .
+
+- src: user0 a person opens the closet door and puts a piece of clothing in it __eou__ user0 he then opens another closet door and grabs a pair of pants from it before closing it and walking away to turn off the light __eou__ user0 how many people are in the room ?
+- ref: user1 there is only man in the video
+- tgt: user0 there is only one , a man .
+
+- src: user0 one lady is in the bathroom running water over her hands , while another lady is at the open door of the bathroom fumbling over and over again with the sliding lock mechanism __eou__ user0 a woman is in the bathroom washing her hands while another is at the door playing with the lock __eou__ user0 how many people are in this video ?
+- ref: user1 there are only two women
+- tgt: user0 there are two people in the video .
+
+- src: user0 a women sneezing over her cup walks to place the cup down and pick up a plastic container and removes the lid __eou__ user0 a woman standing in the kitchen holding a mug sneezes into it , puts it down and holds a bowl __eou__ user0 what is in the woman 's hands ?
+- ref: user1 she has mug in her hands
+- tgt: user0 a cup in the cup .
+
+- src: user0 a is standing up holding onto a doorknob a back of chair while watching something funny on a laptop with a man that is sitting __eou__ user0 two college age men are watching a video on a laptop and are amused __eou__ user0 are there only two men in the video ?
+- ref: user1 appear so looks like college students eh
+- tgt: user0 yes , there are only two men .
+
+- src: user0 a man closes a big door then opens it over and over then throws a bag in the trash and picks homework up off a table __eou__ user0 a man in a small room opens and closes a door several times , then throws some papers into a bucket located in the middle of the room __eou__ user0 are there any people in the room ?
+- ref: user1 yes just the one man
+- tgt: user0 there is one man in the room .
+
+- src: user0 the man walks into the room and he grabs something off of a chair before wiping the edge of his desk off __eou__ user0 he then steps down and he walks into another room __eou__ user0 a man wipes off a desk and cleans up __eou__ user0 how many people are in the video ?
+- ref: user1 there is only one person there throughout the duration of the video
+- tgt: user0 there is one man in the video .
+
+- src: user0 a man is standing in the kitchen in front of a refrigerator __eou__ user0 the man takes several pictures of the fridge before the video ends __eou__ user0 a guy is taking pictures of his fridge __eou__ user0 why is he standing at the fridge ?
+- ref: user1 to take pictures of the fridge from various angles
+- tgt: user0 i am not sure but he is taking selfies from the fridge .
+
+- src: user0 a person wipes off a pan and sneezes and puts it on the stove __eou__ user0 they walk into another room and lock the front door and take off their shoes __eou__ user0 a man is cleaning his stove and put a pot on the stove , after that he goes to a room , sit in his bad and close the door __eou__ user0 how does the video begin ?
+- ref: user1 man is cooking something
+- tgt: user0 a man is cleaning his kitchen .
+
+- src: user0 a person is snuggling a picture while standing in a hallway __eou__ user0 they then clean the doorknob on a door and walk away __eou__ user0 a man in a hallway standing next to the door and he is holding a photo and he embraces the photo __eou__ user0 where does it happen ?
+- ref: user1 in home of person
+- tgt: user0 it is not shown in the video
+
+- src: user0 a person comes inside and shuts the front door __eou__ user0 the person kneels then sits while trying to take their shoes off __eou__ user0 a man sits down and laughs while taking his shoes off as he sits back and looks at the television __eou__ user0 how many people are in the video ?
+- ref: user1 there is only one person in the video
+- tgt: user0 there is one person in the video .
+
+- src: user0 a man is standing in front of the stove __eou__ user0 the man is holding onto a book and then puts it down __eou__ user0 a man is in the kitchen during the day , walking around with something in his hands __eou__ user0 how many people are in the video ?
+- ref: user1 there is just one person in the video
+- tgt: user0 there is one man in the video .
+
+- src: user0 a man walks into a kitchen , picks up a cup , opens the fridge and pours juice into the cup __eou__ user0 he turns around and grabs a pot , sets it on the stove and turns to walk away __eou__ user0 a man is in the kitchen and opens the fridge and pours a water into a cup , then picks up a metal pot and puts it on the stove __eou__ user0 is that a man or a woman ?
+- ref: user1 it is man in the video
+- tgt: user0 it is a man in the video .
+
+- src: user0 a man is sitting in a chair laughing at a picture __eou__ user0 he gets up and picks the picture up , looks at it again and then takes it over to the other side of the room and sets it down before walking out __eou__ user0 a man is sitting in a room listening to something on a device then gets up and leave __eou__ user0 how many people are in the video ?
+- ref: user1 there is only the man in the video
+- tgt: user0 there is one person in the video .
+
+- src: user0 a man walks up a few stairs and picks up a pouch before opening it __eou__ user0 the man closes the pouch and fixes his hair in a mirror __eou__ user0 a man walks upstairs and then comes back downstairs with a pouch __eou__ user0 how many people are there ?
+- ref: user1 one man in the video
+- tgt: user0 there is one man in the video .
+
+- src: user0 a woman is sitting in a chair reading a book __eou__ user0 she walks over to a table grabs a piece of bread and starts spreading peanut butter on it __eou__ user0 a man with long hair reads a book and then goes to a table to make a sandwich __eou__ user0 how many people are in the video ?
+- ref: user1 there is only one man in the video
+- tgt: user0 there is one person in the video .
+
+- src: user0 a man runs into a room with purple walls and notices something on a chair __eou__ user0 he stands there , breathing heavy and just stares at it __eou__ user0 a man runs into a room while holding a object , he stares at a chair while breathing heavily __eou__ user0 is there only one man in the video ?
+- ref: user1 yes there is only one man in the video
+- tgt: user0 yes , there is only one man in the video
+
+- src: user0 a man is standing in a doorway holding a laptop __eou__ user0 he closes the laptop __eou__ user0 the man start to dust the washing machine with a rag __eou__ user0 who is in the video ?
+- ref: user1 there is just one man
+- tgt: user0 a man is in the doorway and the man is holding the laptop .
+
+- src: user0 a man is reading a book at his desk in front of a laptop __eou__ user0 he takes off his shirt and throws it in to the corner of the room __eou__ user0 a man takes off his shirt and throws it into the corner while sitting at his desk __eou__ user0 is there only one man in the video ?
+- ref: user1 there is only one yes
+- tgt: user0 yes , there is only one man .
+
+- src: user0 a man picks up a few things around his bedroom and holds them in his hands __eou__ user0 he then attempts to juggle some of them , but fails __eou__ user0 a person with a <unk> is standing in a messy bedroom <unk> g to juggle a few things __eou__ user0 how many people are in the video ?
+- ref: user1 there is person in the video
+- tgt: user0 there is only one person in the video
+
+- src: user0 a man walks into a room with a cloth in his hand , and sits on the stairs __eou__ user0 then he stands and dusts the small table in front of him __eou__ user0 a man walks into a room with a rag , wipes down a table , and then leaves the room __eou__ user0 what is the man carrying ?
+- ref: user1 cloth to wipe with
+- tgt: user0 he has a rag in a plastic bag .
+
+- src: user0 a person in a nightgown is walking towards the camera from a distant room __eou__ user0 they walk slowly and take a bite of food when they get to the camera __eou__ user0 the woman does something and then <unk> and scratches after looking at the phone __eou__ user0 who is in the room ?
+- ref: user1 there is only one women
+- tgt: user0 there is a woman in the room .
+
+- src: user0 a man is standing in front of the fridge with the door open , he the closes the door and grabs a broom and throws it on the floor __eou__ user0 a man is shuffling things inside his fridge __eou__ user0 he closes the door , grabs a broom and throws it on the ground __eou__ user0 how many people are in the clip ?
+- ref: user1 there is just one person in the video
+- tgt: user0 there is just one man
+
+- src: user0 a person gets on a stool to fix the light fixture on the ceiling fan __eou__ user0 she then gets down and starts to fold some clothes from a bed __eou__ user0 a person is standing on a stool fixing a light and then they climb down and fold the clothes that are on the bed __eou__ user0 what room does the video happen in ?
+- ref: user1 looks like bedroom that is visible
+- tgt: user0 it looks like a bedroom .
+
+- src: user0 a man is in a hallway standing there __eou__ user0 he begins to play with his phone for a few moments , before looking up and laughing and then looking back at his phone __eou__ user0 a man is standing in the hallway , playing a game on his cellphone that he finds funny __eou__ user0 is the man coming in or going out the door ?
+- ref: user1 he was standing by the door the entire time
+- tgt: user0 he is in a hallway , but he does .
+
+- src: user0 a person enters in a room holding a cellphone and a book the throw the book to the floor and watch the doorknob very close , then leaves the room __eou__ user0 a man walks into a foyer and throws a book on the ground __eou__ user0 he then walks to the door and examines the doorknob for a while __eou__ user0 is that a man or a woman ?
+- ref: user1 that is man in the video
+- tgt: user0 it is a man in the video .
+
+- src: user0 person walks into the kitchen and gets a mirror out of the cabinet __eou__ user0 she show the person holding the camera the mirror and the person holding the camera spoke in another language while the first person exited __eou__ user0 a woman enters the kitchen and grabs a <unk> mirror then shows it to the camera man __eou__ user0 is that a woman ?
+- ref: user1 yes it 's an older woman in the video
+- tgt: user0 yes it is a woman .
+
+- src: user0 a man walks through the front door and sneezes __eou__ user0 then he sits down on a chair right in front of the door and looks down __eou__ user0 a man in his late twenties that sneezes as he walks into room __eou__ user0 how many people are in the room ?
+- ref: user1 there is just one man
+- tgt: user0 there is only one person in the room
+
+- src: user0 a person is screwing a bulb in on the wall and wiping it off __eou__ user0 they pick up a box from the counter , they turn off the light and walk out of the bathroom __eou__ user0 a young man wearing glasses changes a lightbulb in the bathroom and then leaves the room __eou__ user0 is it a male or female in the video ?
+- ref: user1 there is man there
+- tgt: user0 it is a male in the video
+
+- src: user0 a man is sitting on a red plastic chair reading a book __eou__ user0 he looks up for a moment , slams the book on the stool in front of him and runs towards the street __eou__ user0 there is a man sitting alone in his home trying to read a book alone to himself while hearing birds chirping in the background it appears to <unk> the man to the point he gets frustrated and smashes the book and leaves his home __eou__ user0 is the person emotional ?
+- ref: user1 yes the person appears to be frustrated with something he <unk> the book on the table before he stands up
+- tgt: user0 he is sitting on a chair and eating a book .
+
+- src: user0 a person walks into a bathroom and starts to bend over to put items in a sink __eou__ user0 he does it again before putting an item in the trash and then once again in the sink __eou__ user0 he then throws something out of the bathroom and then walks out __eou__ user0 how many people is there ?
+- ref: user1 there is one man in the video
+- tgt: user0 there is only one person
+
+- src: user0 there is a college kid sitting and reclining on his desk __eou__ user0 he gets up and starts folding clothes and putting them in his basket __eou__ user0 a man is standing in a bedroom placing laundry from the bed into a basket __eou__ user0 how many people are in the video ?
+- ref: user1 just one person in the room
+- tgt: user0 there is one person in the video .
+
+- src: user0 a man in a red shirt is staring at a closet then he walks towards the window __eou__ user0 he then picks some items up off the bed and runs out of the room __eou__ user0 an adult man is cleaning a room quickly before he picks up a broom and leaves the room __eou__ user0 how does the video begin ?
+- ref: user1 man is standing and looking in closet at the beginning
+- tgt: user0 a man is standing by a closet and cleaning his shirt .
+
+- src: user0 a man is getting something from the bathroom cabinet __eou__ user0 he is putting the soap on something and continues to grab things from the shelf __eou__ user0 a man in a bathroom removes a plate from a cabinet , takes out a pill bottle , swallows a pill with water , and then returns all the objects to the cabinet __eou__ user0 does the man say anything ?
+- ref: user1 no the man doesnt say anything in the video
+- tgt: user0 no the man does not say anything .
+
+- src: user0 a man is in the kitchen doing dishes with music heard in the background __eou__ user0 he then leaves the sink and walks to a chair to sit down __eou__ user0 there is a guy in the kitchen who proceeds to do the dishes __eou__ user0 what is happening in the video ?
+- ref: user1 guy goes to wash dishes
+- tgt: user0 a man is washing dishes . he then walks away .
+
+- src: user0 the man is in the kitchen washing the dishes and putting them on the side __eou__ user0 the man is sitting on the chair eating something with a spoon __eou__ user0 a man is washing dishes and gets something to eat and sits and watches tv and calls out for someone in another room __eou__ user0 does it start out with him washing dishes ?
+- ref: user1 yes someone is washing dishes
+- tgt: user0 yes it starts with a man standing in front of the stove .
+
+- src: user0 a man is standing in a bathroom eating a sandwich and enjoying a drink __eou__ user0 the throws his sandwich in a bucket and runs barefoot out of the room __eou__ user0 a boy is in the bathroom eating and drinking , then runs into another room barefoot __eou__ user0 is this boy looking in the mirror ?
+- ref: user1 no he 's standing in the bathroom eating sandwich and having drink
+- tgt: user0 no he is not in the mirror .
+
+- src: user0 a man tries to turn off the water in the sink before sneezing __eou__ user0 he then takes off his shoes before working on the door handle __eou__ user0 the man stands in the room and does something before juggling wit <unk> door __eou__ user0 what does the man do ?
+- ref: user1 many things first it looks like he turns off the water
+- tgt: user0 he turns on the door knob .
+
+- src: user0 tje , am os gazing and stalling , his plan is <unk> but he goes to it __eou__ user0 the coffe cup bean is set on the table to the left and he grabs his cellphone for an pause __eou__ user0 a man enters the kitchen , takes a cup from a cabinet , rinses it off in the sink , and then uses his cellphone __eou__ user0 where does the video take place ?
+- ref: user1 the video takes place inside the kitchen area
+- tgt: user0 it takes place in a kitchen .
+
+- src: user0 a man stands by a shelf looking at items on it , while writing in a notebook __eou__ user0 a boy walks onscreen , carrying a dvd player , handing it to the older man __eou__ user0 the two men are in <unk> in the shelve with an notepad , the other one is linger , while the third one younger is passing an <unk> __eou__ user0 how does they video begin ?
+- ref: user1 there is one note taker consuming some notes
+- tgt: user0 a boy is standing in front of a shelf .
+
+- src: user0 a man is leaning on a wall watching a video on his phone __eou__ user0 he bends over to pick up a pair of shoes on the ground in front of him __eou__ user0 man playing and talking on phone , picks up shoes and puts them on in the corner of the room __eou__ user0 is there only one person in the video ?
+- ref: user1 only one person in the video
+- tgt: user0 yes , there is only one man in the video .
+
+- src: user0 a man looks at a mirror before opening and reaching into a medicine cabinet __eou__ user0 after looking around it he then grabs a towel and drops it on the floor __eou__ user0 a man rummages through the medicine cabinet and then takes a towel , wads it up and throws it on the floor __eou__ user0 what is the woman doing in the bathroom ?
+- ref: user1 the man walks up to the sink and looks in the mirror at first
+- tgt: user0 she is looking at a mirror in a cabinet .
+
+- src: user0 a women in a black shirt is standing by the stove __eou__ user0 she begins to pour water from a white mug into a pot on the stove __eou__ user0 woman standing at stove pour water into a pot __eou__ user0 is there only just this woman ?
+- ref: user1 yes there is only just this woman
+- tgt: user0 yes , she only the woman with the water at the stove .
+
+- src: user0 a person is leaning against their kitchen counter , watching a cooking video on their laptop __eou__ user0 they put a small card on top of their microwave and afterwards turn their attention back to the laptop video __eou__ user0 a man is standing in the kitchen looking at a cooking show on his lap top and he is holding a pencil __eou__ user0 what happens in the video ?
+- ref: user1 young man is standing in the kitchen
+- tgt: user0 a man is standing in a kitchen and looks at a pot on his laptop
+
+- src: user0 this guy is putting clothes and detergent in his 2 - in - 1 washer and dryer __eou__ user0 he sits down on a stool nearby to read from his book __eou__ user0 a person puts clothes in a washer than sits on a stool and reads a book __eou__ user0 how many people are in the video ?
+- ref: user1 there is on man in the video
+- tgt: user0 there is one person in the video
+
+- src: user0 a man is doing something in the doorway of a room and then enters the room and opens the window before pouring something in his mouth __eou__ user0 a man <unk> an object above the doorway __eou__ user0 he enters the room , picks up a drink and a pen , opens a window and takes a sip of the drink __eou__ user0 how many people are in the video ?
+- ref: user1 one person is in the video
+- tgt: user0 there is only one person in the video .
+
+- src: user0 a man lifts a box , and slowly places it on a top shelf , knocking a decoration next to it __eou__ user0 a woman in the back stands , holding a pillow , occasionally sneezing throughout the video __eou__ user0 she wipes her nose with her hand __eou__ user0 who is in the clip ?
+- ref: user1 man and woman who both look like they are from india
+- tgt: user0 a woman is in the clip
+
+- src: user0 a man is leaning against a wall , and throws something into a sink , from a plate __eou__ user0 then walks and opens up a book bag , removing two books from it , and sits at a table , on the floor , looking at them __eou__ user0 an adult man wearing a maroon shirt throws some food items away then sits down at a table , takes out a book and begins ti write in it __eou__ user0 how does the video begin ?
+- ref: user1 man standing by fridge picks snacks and throws them away then goes to his bag by the wall
+- tgt: user0 a man is standing around a guy with a rag .
+
+- src: user0 someone walks over to a doorway and tosses shoes into another room __eou__ user0 the person starts drinking out of a cup with a straw __eou__ user0 a person putting shoes away watching tv __eou__ user0 how does the video start ?
+- ref: user1 with the camera showing the livingroom with noone in frame
+- tgt: user0 a man walks in and sits down on the couch and picks up some shoes and walks to the other room
+
+- src: user0 a man is using a screwdriver to tighten the screws on a vacuum cleaner __eou__ user0 he takes the filter out of the vacuum and places it on a table and grabs some shoes that he places on a dresser __eou__ user0 a man is working on the filter of his vacuum cleaner while squatting , then gets up and puts it on the dresser and stands around __eou__ user0 is ther eonly one guy here ?
+- ref: user1 yeah it 's only the guy in the video
+- tgt: user0 it looks like he is just a man
+
+- src: user0 a man washes his face with a cloth while a woman walks around the room , holding a broom __eou__ user0 they both look at a tv that is playing a program __eou__ user0 a man is sitting on a couch in the living room wiping his face with a towel and a woman walks by __eou__ user0 what is the man holding in his hands ?
+- ref: user1 he is holding towel
+- tgt: user0 it looks like a towel .
+
+- src: user0 a person walks into the kitchen and starts arranging things on a counter __eou__ user0 he than picks up a bag off the floor and takes out items that he places on a small shelf __eou__ user0 a man walks in the kitchen and puts things on the shelf __eou__ user0 how many people are there ?
+- ref: user1 there is just one guy in the video
+- tgt: user0 there is only one person in the video
+
+- src: user0 a man is sitting in a chair watching tv __eou__ user0 then a woman comes in with a <unk> and she is wandering around the room and he smiles at her __eou__ user0 the people sit on the sofa and dance while watching a movie in another languge __eou__ user0 who is in the scene ?
+- ref: user1 there are man and woman
+- tgt: user0 a woman is in the room
+
+- src: user0 a boy walk into the room laughing and throw a picture on the floor and start playing with a vacuum that is on the table __eou__ user0 a teenager picks ups a picture , laughs and throws it on the floor __eou__ user0 he then pretends to vacuum __eou__ user0 what type of room are we in today ?
+- ref: user1 it kind of looks like living room
+- tgt: user0 it looks like a living room
+
+- src: user0 a man is standing on his tip toes touching something on a top shelf in a bedroom __eou__ user0 he then reaches down onto a mattress on the floor and picks up a shirts , puts it on , and buttons it up __eou__ user0 a man is looking for an object in his room he reaches for it and then puts on a shirt __eou__ user0 what is the man reaching for ?
+- ref: user1 he appears to be putting something on shelf but can not see what it is
+- tgt: user0 he is looking through a shelf .
+
+- src: user0 a man drinks some water , he then picks up a photo and looks at it , drops it , then <unk> down to fix a vacuum cleaner , he then starts to laugh __eou__ user0 a person drinks a glass of water near a kitchen counter and then picks up a picture and throws it __eou__ user0 he then squats to see a vacuum cleaner and then laughs __eou__ user0 what is happening in the video ?
+- ref: user1 man is standing at the counter drinking water
+- tgt: user0 a man is drinking water and drinks it . then he walks away with a vacuum cleaner .
+
+- src: user0 a man holding a broom is sneezing __eou__ user0 the then paces around in the room before opening a sliding window , first the left side , then the right __eou__ user0 a man is in a room holding a broom and opens the window __eou__ user0 does he talk ?
+- ref: user1 no he doesn 't talk what do you think
+- tgt: user0 no there is no talking
+
+- src: user0 a person walks into the bedroom and shakes out some clothes __eou__ user0 he puts a pillow under his arm and tries to roll up a sheet __eou__ user0 a man drapes some clothes over his shoulder and holds a pillow and blanket __eou__ user0 how many people are there ?
+- ref: user1 there is just the one guy in the video
+- tgt: user0 there is only one person in the video
+
+- src: user0 a women gets up fron chair , walks to the table and picks up a sandwich on plate and a cup __eou__ user0 she has a hard time leaving the room __eou__ user0 a woman tries to bring a plate and some food into the kitchen __eou__ user0 how many people are there ?
+- ref: user1 there is only one person in the video
+- tgt: user0 there is only one person
+
+- src: user0 a person is sitting on the toilet in a bathroom talking on the phone __eou__ user0 they cough and get off the toilet and get a glass of water from the sink __eou__ user0 a man talks on the phone while sitting on the toilet __eou__ user0 how many people are there ?
+- ref: user1 there is only one person
+- tgt: user0 there is only one person in the video .
+
+- src: user0 a person gets a picture from the wall , he leaves the picture on the table , laughs and sits on the sofa __eou__ user0 how many people are in this video ? __eou__ user1 one man in the video . __eou__ user0 how does the video start ?
+- ref: user1 man is holding up small black box towards an empty light <unk> and twisting it in front of it
+- tgt: user1 the man is standing in a hallway , and then takes a picture of himself , and sits on the sofa .
+
+- src: user0 a person lays in bed then gets up to turn on the light __eou__ user0 they sit down and have a bite of sandwich before going over to fold laundry __eou__ user0 a man lays on bed , then he goes and turns on the lights and gets sandwich , he sits on bed and eats it __eou__ user0 how does the video start ?
+- ref: user1 the guy is laying on the bed
+- tgt: user0 a man is laying on bed
+
+- src: user0 a young man walks into a living room with a light bulb __eou__ user0 he changes the bulb in a lamp and turns on the light and leaves the room __eou__ user0 there is a man the changes a lightbulb in a lamp then turns the lamp on and exits the room __eou__ user0 how does this video begin ?
+- ref: user1 man walks into the living room with lightbulb
+- tgt: user0 a man is walking into the room with a light bulb .
+
+- src: user0 a man is standing by a washer and dryer , picks something up and laughs __eou__ user0 he throws the thing down onto a pillow , throws a blanket on it and then squats down to adjust it __eou__ user0 a man stands in front of a washing machine laughing , he bends over a hamper on the floor __eou__ user0 what is the man doing in the video ?
+- ref: user1 the man is doing his laundry
+- tgt: user0 he is standing in front of the washer and dryer .
+
+- src: user0 man is standing around drinking from a cup __eou__ user0 he then picks up a piece of paper and puts it on the wall __eou__ user0 a person takes a drink and then puts something on a wall __eou__ user0 how many people are there ?
+- ref: user1 there 's only one person man
+- tgt: user0 there is one person in the video .
+
+- src: user0 a person sits on a table while he watches tv __eou__ user0 another person is saying things to him and he appears to be following <unk> as he sits on the table __eou__ user0 a young boy fidgets with his shirt while listening <unk> to a woman who is speaking to him in a foreign language while the tv plays in the background __eou__ user0 is the boy talking to someone ?
+- ref: user1 there is woman in the background talking to him but he says nothing
+- tgt: user0 no , he is not talking to anyone .
+
+- src: user0 a man enters the kitchen __eou__ user0 he sits down at the table in front of a plate and glass of what appears to be water __eou__ user0 the man picks up a book and begins reading while drinking from the glass __eou__ user0 when did the man enter the room ?
+- ref: user1 he entered at the beginning of the video
+- tgt: user0 the man was in the room from the beginning .
+
+- src: user0 a man is sitting in a chair looking at a computer screen __eou__ user0 the man then gets up and dusts with a towel and some spray __eou__ user0 a man sitting at a computer with a cloth and spray gets up to dust the cabinets , then open a cabinet door __eou__ user0 does the man <unk> the room ?
+- ref: user1 no he is sitting in his chair at the computer from the start
+- tgt: user0 yes , he is sitting at a computer computer
+
+- src: user0 a man <unk> into the kitchen holding a bag , throws the bag and then walks around the kitchen __eou__ user0 he walks back into frame and goes to the other side of the kitchen again __eou__ user0 a guy walks in from another room with a bag in his hand that he throws on the countertop and then leave __eou__ user0 how many people are in the video ?
+- ref: user1 just one guy who comes running to the kitchen
+- tgt: user0 there is only one person in the video .
+
+- src: user0 the man sits at his computer typing before taking a drink from his cup and looking at a picture __eou__ user0 he then puts the picture into his drawer before focusing his attention back to the lap top screen __eou__ user0 a man is on the computer , he takes a drink from a cup then picks up a photo looks at it then places it on the drawer __eou__ user0 where is this taking place ?
+- ref: user1 it looks like bedroom maybe or could be the living room it 's hard to tell
+- tgt: user0 it looks like it is in a bedroom .
+
+- src: user0 a man comes into the room and grabs a broom __eou__ user0 he then throws the broom against the couch , sits down in a chair , and grabs a blanket __eou__ user0 he hugs the blanket , gets up , tosses the blanket on the couch , and leaves __eou__ user0 how does the video start ?
+- ref: user1 man comes into the room
+- tgt: user0 a man walks into the room and grabs a blanket .
+
+- src: user0 a man is working on a lock on a door __eou__ user0 then he sits down and grabs and pillow and hugs it __eou__ user0 he smiles at the person holding the camera and then grabs a container of food off the table next to him and eats out of it __eou__ user0 is the guy alone ?
+- ref: user1 no can hear the person holding the camera although can 't see them
+- tgt: user0 yes , there is only one person in the room .
+
+- src: user0 a man stands in the bathroom by a sink , and puts on his shirt , and buttons it up __eou__ user0 he then turns around , and walks towards the camera __eou__ user0 a man puts on a shirt in a bathroom and then turns around and leaves the room __eou__ user0 how many people are in the video ?
+- ref: user1 just one person in the video
+- tgt: user0 there is only one man
+
+- src: user0 woman standing outside texting __eou__ user0 man walks up to her , watches her text and then starts looking in the brown bag he is holding __eou__ user0 a women is looking at her phone and then a man with a bag walks up and looks at her and then starts looking in his bag __eou__ user0 what kind of room are they in ?
+- ref: user1 they are like on the side of building
+- tgt: user0 it looks like a bedroom or a dorm room
+
+- src: user0 a person walks into a room while holding a camera in his hand __eou__ user0 he looks around with it and then places it on a book shelf before leaving the room __eou__ user0 a man carries a camera around and sets it on the shelf __eou__ user0 how many people are in the video ?
+- ref: user1 just one person is in the video
+- tgt: user0 there is only one person in the video
+
+- src: user0 this guy is cleaning his blinds or something __eou__ user0 he walks to the closet and changes into a new button up shirt __eou__ user0 a man is standing and goes and walks towards a window and cleans it __eou__ user0 where is the sitting in the video taking place ?
+- ref: user1 not according to this one the person appears to take there time standing
+- tgt: user0 he is in his bedroom
+
+- src: user0 a boy stands on a staircase outside against a wall , holding a rag , he then throws the rag down towards the ground __eou__ user0 he sits on the staircase , lifts and opens a small box __eou__ user0 a boy stands on stair case against wall and throws rag on ground before sitting and picking up a box form the stairs __eou__ user0 what is the boy holding in his hand ?
+- ref: user1 in the beginning of the clip he holds rag in the end of the clip he holds small box
+- tgt: user0 it looks like a piece of some sort .
+
+- src: user0 a man is cleaning the back of a door attached to a closet __eou__ user0 a younger boy is standing barefoot recording the man with a phone as he cleans __eou__ user0 a man is cleaning the closet door while a boy video tapes him with his camera __eou__ user0 does the boy take a picture of the man ?
+- ref: user1 he looks like he is recording him rather than taking picture
+- tgt: user0 yes he does . he is holding a camera .
+
+- src: user0 a woman is standing in front of a closet and putting things away __eou__ user0 she appears to sit down and grabs a laptop __eou__ user0 the woman looks at the camera a couple of times before approaching it __eou__ user0 who is there ?
+- ref: user1 there is only one woman in the video
+- tgt: user0 a woman is in the video .
+
+- src: user0 a man walks into a room and takes of his buttoned shirt __eou__ user0 he walks towards a wall to grab a broom and start sweeping __eou__ user0 a boy is seen sweeping the floor and removes his shirt and throws it away __eou__ user0 how many people appear in the video ?
+- ref: user1 only see one <unk>
+- tgt: user0 there is only one guy
+
+- src: user0 a woman is lying on a couch on her side while reading a book and looking back and forth between the book and the tv __eou__ user0 a women in laying on her couch in the living room __eou__ user0 the women is watching tv in front of her and also reading a book in between watching tv __eou__ user0 what is happening in this video ?
+- ref: user1 looks like woman laying down on her side looking at tv
+- tgt: user0 a woman is sitting on a couch and reading a book and she sits down and watches tv
+
+- src: user0 the girl adjust the frame of the <unk> puzzle item __eou__ user0 she is ready to go turns around to drink some coffee and turns around and pivots __eou__ user0 a girl adjusts a picture on the wall and then backs up and takes a drink while looking at it __eou__ user0 how many people are in the video ?
+- ref: user1 there is only person
+- tgt: user0 there is only one person in the video .
+
+- src: user0 an older woman on screen <unk> a pillow slowly in a circle , during the whole video __eou__ user0 another younger woman , walks on screen , carrying a plastic bag with food items , that she takes out one by one , and places them on the table __eou__ user0 the older woman turns a pillow , the younger woman empties a bag and shows the camera man the stuff from the bag __eou__ user0 does anyone start on camera when the video begins ?
+- ref: user1 yes two women are on <unk>
+- tgt: user0 no , there are two people in the video .
+
+- src: user0 a man wanders around a room , tosses a pillow on the floor , and bends down to mess with some stuff on the table __eou__ user0 a boy stands by a doorway as he drinks from a cup __eou__ user0 he then sets the cup on a shelf and picks up a pillow before he throws it and arranges papers on a table __eou__ user0 how many people in the video ?
+- ref: user1 just one person is in the video
+- tgt: user0 there is only one person .
+
+- src: user0 a women closes an upper cabinet door than picks up a glass of water to take a sip and than walks <unk> __eou__ user0 so the woman takes a glass from the cabinet and sets it on the counter __eou__ user0 she then walks down the hall __eou__ user0 hi , how does all this start ?
+- ref: user1 it starts out with the girl in the kitchen holding glass
+- tgt: user0 a woman is standing in front of a cabinet cabinet .
+
+- src: user0 a man is sitting down in a room being a couch __eou__ user0 he stands up , grabs the television remote , turns the television on , and stands there to see what is on the television __eou__ user0 a person is in the living room watching tv and uses the remote __eou__ user0 what gender is the person ?
+- ref: user1 looks like male person
+- tgt: user0 this person is a male .
+
+- src: user0 a man walks into a laundry area and grabs a drink that was on a machine __eou__ user0 he puts the drink down and starts to play with a nearby laptop __eou__ user0 the person is in the basement drinking water and then gets their laptop __eou__ user0 what is the gender of the person tehre ?
+- ref: user1 it looks like man
+- tgt: user0 i think it is a man .
+
+- src: user0 a man walks into a hallway carrying a box in his hands , the man then heads toward the end of the hallway and moves a mirror blocking the closet doors __eou__ user0 the man then opens the closet doors , and places the box in his hands , on the top shelf of the closet and then closes the door __eou__ user0 man carried a box , then looked in a closet __eou__ user0 what 's <unk> at beginning of the video ?
+- ref: user1 man in all black is holding box
+- tgt: user0 a man walks into the hallway
+
+- src: user0 a woman runs out of a bed room and then runs back in __eou__ user0 she puts a blanket around her and then undresses under the blanket __eou__ user0 a girl leaves a room then reappears to change clothes under a blanket __eou__ user0 how many people are in the video ?
+- ref: user1 just one woman by herself
+- tgt: user0 there is only one person in the video .
+
+- src: user0 a person laying on the couch under some blankets __eou__ user0 he gets up and grabs a picture frame to laugh at it before putting it away to grab a glass to drink from it __eou__ user0 the man inside a living room was napping on the couch , then got up feeling <unk> __eou__ user0 how many people can be seen in the video ?
+- ref: user1 there is only one person in the video
+- tgt: user0 there is only one person in the video .
+
+- src: user0 a girl , with a white wrap around pours herself a drink into a glass from a large bottle she is holding __eou__ user0 there is a man with her __eou__ user0 a woman in a room is drinking soda from a cup and a man goes past her to open the door __eou__ user0 how many people are in the video ?
+- ref: user1 only one person is in the video
+- tgt: user0 there is a woman and a woman .
+
+- src: user0 a man wearing a red and black striped shirt is standing in a blue stairwell __eou__ user0 he grins while holds a book under one arm and something else in his hands __eou__ user0 a man stands at the bottom of the stairs holding two objects __eou__ user0 how many people are visible in the video ?
+- ref: user1 there is just one man visible
+- tgt: user0 there is only one man in the video
+
+- src: user0 a man stretches his arms up and walks to another room to get a blanket and pillow __eou__ user0 he wraps himself up in the blanket and takes a seat in a chair __eou__ user0 a man reaches at and grabs a light and then grabs a blanket and pillow and sits down in a chair __eou__ user0 does the man reach up to the light ?
+- ref: user1 yes the man reaches up to the light
+- tgt: user0 no , he is not in the video at all .
+
+- src: user0 we see the view of a kitchen before a man in a blue t shirt finally enters the frame and grabs something from atop an adjacent washer / dryer __eou__ user0 he takes it with him as he walks out of the frame __eou__ user0 a man walks towards a washer and dryer in a room and he grabs the dryer sheet box and leaves __eou__ user0 where does it happen ?
+- ref: user1 all in the same room
+- tgt: user0 it starts with him walking into the room .
+
+- src: user0 a person is standing up and holding onto a pillow with their left arm __eou__ user0 they are <unk> with an overhead light with their hands __eou__ user0 a man is trying to fix a light while holding the pillow __eou__ user0 what is the first thing that happens ?
+- ref: user1 man reaches up to mess with the light above him
+- tgt: user0 a man is standing by the doorway holding a pillow and his hands with his left hand .
+
+- src: user0 a man turns off a light , and then enters into a glass door __eou__ user0 afterward , he enters into another door and goes out of sight __eou__ user0 a man with a goatee and wearing a tie turns off the lights in his office , glances at a camera , then exits the office as the door closes behind him __eou__ user0 what kind of room am i looking at ?
+- ref: user1 it looks like some sort of office
+- tgt: user0 it looks like a living room
+
+- src: user0 a person walks into a room and takes out a pair of shoes from a box __eou__ user0 he then puts them away and grabs a broom and starts sweeping the floor before leaving __eou__ user0 a guy walks in a room , picks up shoes and a brook then starts to sweep __eou__ user0 what is he doing ?
+- ref: user1 man walks into room with box
+- tgt: user0 he walks into the room and picks up a pair of shoes .
+
+- src: user0 a young boy standing picks up different items of clothing , one by one , placing them on a nearby chair __eou__ user0 a man lays in a bed next to him , watching the young boy the whole time __eou__ user0 a boy piles clothes while another man sleeps in the bed the boy is singing __eou__ user0 is that a little boy ?
+- ref: user1 think so was is he doing
+- tgt: user0 it appears to be a boy .
+
+- src: user0 a boy with a box on his hands sitting on a chair in front of a tv , he than throws the little box towards the tv , he gets <unk> and takes it again __eou__ user0 the man is in the room preoccupied with a box until he throws it __eou__ user0 what is the gender of the person ? __eou__ user1 the person is a male . __eou__ user0 who is there ?
+- ref: user1 it 's just him in the video
+- tgt: user1 a man with a box .
+
+- src: user0 a man is sitting down watching something on his laptop and laughing __eou__ user0 he then gets up , takes a broom , and starts to sweep the floor __eou__ user0 how many people are on the video ? __eou__ user1 there is only one person in the video . __eou__ user0 is the person male or female ?
+- ref: user1 the person is male
+- tgt: user1 the person is a male .
+
+- src: user0 a man walks off screen , then back in , carrying a blanket __eou__ user0 he then removes his sweater , and both shoes , __eou__ user0 then he sits at the computer desk looking at the monitor __eou__ user0 a man walks into a room , takes off his shoes and jacket , and then sits at the desk and looks at a computer monitor __eou__ user0 is there just one person in the video ?
+- ref: user1 there is absolutely just one person
+- tgt: user0 yes just one person in the video .
+
+- src: user0 a man walks to the refrigerator and places a bag inside __eou__ user0 he then turns to look away from the refrigerator as the camera cuts to a shot of the living room __eou__ user0 a man walks into the kitchen and puts a bag of air in the refridgerator __eou__ user0 he then walks to the camera and makes funny faces before the camera turns to view the living room __eou__ user0 how many people are in the video ?
+- ref: user1 there is just one man
+- tgt: user0 there is only one person in the video
+
+- src: user0 a boy sits on a chair , opening his backpack on his lap , removing some notebooks , and walks off screen , <unk> his back pack __eou__ user0 an older man walks on screen , and lifts 4 cups from a table , stacks them , dusts off the table , and walks away __eou__ user0 a boy sits at a table and takes a notebook out of his backpack __eou__ user0 the boy gets up and leaves and you see a man picks up cups and dust off the table __eou__ user0 i see only black empty photos , who is in the video ?
+- ref: user1 there are two people in the video man and boy
+- tgt: user0 there is a boy and a boy .
+
+- src: user0 a man rubs his hands and then his face with a striped towel __eou__ user0 then he exits the bathroom and stands smiling __eou__ user0 where is the video taken ? __eou__ user1 it looks like a bathroom . __eou__ user0 is there any person inside ?
+- ref: user1 yes there is man
+- tgt: user1 yes there is one person .
+
+- src: user0 a person is standing a door with a plastic bag in her hand __eou__ user0 a young boy is holding a mug __eou__ user0 the girl <unk> up the plastic bag and throws it on the floor __eou__ user0 a boy holding a cup and a girl holding a plastic bag are standing next to each other __eou__ user0 how many people are in the video ?
+- ref: user1 there are two people standing next to one another in the video
+- tgt: user0 there are two people in the video
+

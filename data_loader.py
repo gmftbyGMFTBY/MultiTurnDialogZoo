@@ -194,7 +194,7 @@ def get_batch_data_flatten(src, tgt, src_vocab, tgt_vocab, batch_size, maxlen, t
             tbatch = tbatch.cuda()
             sbatch = sbatch.cuda()
             turn_lengths = turn_lengths.cuda()
-
+            
         fidx = bidx
 
         yield sbatch, tbatch, turn_lengths

@@ -12,6 +12,7 @@ import torch.nn.functional as F
 import torch.nn.init as init
 import math
 import random
+import ipdb
 import numpy as np
 import pickle
 import ipdb
@@ -132,7 +133,9 @@ class Decoder(nn.Module):
         # output: [batch, output_size]
         # hidden: [2, batch, hidden_size]
         # hidden = hidden.squeeze(0)
-        return output, hidden
+        # ADD THE ATTENTION MAP
+        return output, hidden, attn_weights.squeeze()
+        # return output, hidden
     
     
 class Seq2Seq(nn.Module):
@@ -192,6 +195,9 @@ class Seq2Seq(nn.Module):
     
     def predict(self, src, maxlen, lengths, loss=True):
         with torch.no_grad():
+            # ADD THE ATTENTION MAP
+            attention_map = np.zeros((maxlen, src.shape[0]))
+            
             batch_size = src.shape[1]
             outputs = torch.zeros(maxlen, batch_size)
             floss = torch.zeros(maxlen, batch_size, self.output_size)
@@ -206,14 +212,18 @@ class Seq2Seq(nn.Module):
                 output = output.cuda()
 
             for t in range(1, maxlen):
-                output, hidden = self.decoder(output, hidden, encoder_output)
+                # ADD THE ATTENTION MAP
+                output, hidden, attn = self.decoder(output, hidden, encoder_output)
+                attention_map[t] = attn.cpu().numpy()
                 floss[t] = output
                 # output = torch.max(output, 1)[1]    # [1]
                 output = output.topk(1)[1].squeeze()
+                # ADD THE ATTENTION MAP
+                output = output.unsqueeze(0)
                 outputs[t] = output    # output: [1, output_size]
 
             if loss:
-                return outputs, floss
+                return outputs, floss, attention_map
             else:
                 return outputs 
 

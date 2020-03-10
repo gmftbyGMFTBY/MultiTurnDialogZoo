@@ -170,9 +170,13 @@ class Decoder(nn.Module):
         
         # word level attention
         context_output = []
+        # ADD THE ATTENTION MAP
+        word_attn = []
         for turn in encoder_outputs:
             # ipdb.set_trace()
             word_attn_weights = self.word_level_attn(key, turn)
+            # ADD THE ATTENTION MAP
+            word_attn.append(word_attn_weights.squeeze())
             context = word_attn_weights.bmm(turn.transpose(0, 1))
             context = context.transpose(0, 1).squeeze(0)    # [batch, hidden]
             context_output.append(context)
@@ -195,7 +199,14 @@ class Decoder(nn.Module):
         # output = torch.cat([output, context], 1)    # [batch, 2 * hidden]
         output = self.out(output)     # [batch, output_size]
         output = F.log_softmax(output, dim=1)
-        return output, hidden
+        
+        # ADD THE ATTENTION MAP
+        attn = []
+        for factor, word_attn in zip(attn_weights.squeeze(), word_attn):
+            w = (0.25 * word_attn).tolist()
+            attn.extend(w)
+        attn = np.array(attn)
+        return output, hidden, attn, attn_weights.squeeze()
 
 
 class HRAN(nn.Module):
@@ -276,6 +287,11 @@ class HRAN(nn.Module):
         # predict for test dataset, return outputs: [maxlen, batch_size]
         # src: [turn, max_len, batch_size], lengths: [turn, batch_size]
         with torch.no_grad():
+            # ADD THE ATTENTION MAP
+            src_len = sum([i.shape[0] for i in src])
+            attention_map = np.zeros((maxlen, src_len))
+            context_attention_map = np.zeros((maxlen, len(src)))
+            
             turn_size, batch_size = len(src), src[0].size(1)
             outputs = torch.zeros(maxlen, batch_size)
             floss = torch.zeros(maxlen, batch_size, self.output_size)
@@ -302,17 +318,16 @@ class HRAN(nn.Module):
             if torch.cuda.is_available():
                 output = output.cuda()
 
-            try:
-                for i in range(1, maxlen):
-                    output, hidden = self.decoder(output, hidden, turns_output)
-                    floss[i] = output
-                    output = output.max(1)[1]
-                    outputs[i] = output
-            except:
-                ipdb.set_trace()
+            for i in range(1, maxlen):
+                output, hidden, attn, context_attn = self.decoder(output, hidden, turns_output)
+                attention_map[i] = attn
+                context_attention_map[i] = context_attn.cpu().numpy()
+                floss[i] = output
+                output = output.max(1)[1]
+                outputs[i] = output
 
             if loss:
-                return outputs, floss
+                return outputs, floss, (attention_map, context_attention_map)
             else:
                 return outputs
 
