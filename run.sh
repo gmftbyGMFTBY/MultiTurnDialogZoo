@@ -85,7 +85,7 @@ fi
 if [ $hierarchical = 1 ]; then
     maxlen=50
     tgtmaxlen=30
-    batch_size=64
+    batch_size=128
 elif [ $transformer_decode = 1 ]; then
     maxlen=200
     tgtmaxlen=25
@@ -206,7 +206,7 @@ elif [ $mode = 'graph' ]; then
         --no-bidir \
         --lang $3 \
         --no-fully \
-        --no-self-loop \
+        --self-loop \
     
     python utils.py \
         --mode graph \
@@ -220,7 +220,7 @@ elif [ $mode = 'graph' ]; then
         --no-bidir \
         --lang $3 \
         --no-fully \
-        --no-self-loop \
+        --self-loop \
 
     python utils.py \
         --mode graph \
@@ -234,7 +234,7 @@ elif [ $mode = 'graph' ]; then
         --no-bidir \
         --lang $3 \
         --no-fully \
-        --no-self-loop \
+        --self-loop \
         
 elif [ $mode = 'train' ]; then
     # cp -r ./ckpt/$dataset/$model ./bak/ckpt    # too big, stop back up it

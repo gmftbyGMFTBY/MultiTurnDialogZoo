@@ -300,7 +300,11 @@ def create_the_abs_graph(turns, weights=[1, 1], threshold=1, bidir=False, self_l
     turn_len = len(turns)
     for i in range(turn_len):
         for j in range(turn_len):
-            edges[(i, j)] = [s_w]
+            if i == j:
+                if self_loop:
+                    edges[(i, j)] = [s_w]
+            else:
+                edges[(i, j)] = [s_w]
                 
     # clean the edges
     e, w = [[], []], []
@@ -330,7 +334,7 @@ def create_the_graph(turns, vocab, weights=[1, 1], threshold=0.8, bidir=False):
     
     For dataset DSTC7, [sequential edges, last_utterence edges, user edges, self-loop]
     
-    For Dailydialog dataset, [sequentail edge, bidir first utterance edge, bidir last utterence edges]
+    For Dailydialog dataset, [sequentail edge, first utterance edge, last utterence edges]
     
     For personachat dataset, [last utterence edges, correlation edges (threshold=0.8)]
     

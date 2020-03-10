@@ -403,7 +403,7 @@ if __name__ == "__main__":
         torch.cuda.manual_seed_all(args.seed)
         
     # translate
-    args_dict = vars(args)
+    args_dict = vars(args)    
     with torch.no_grad():
         translate(**args_dict)
     

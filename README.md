@@ -167,7 +167,7 @@ Refer to the paper: `Do Neural Dialog Systems Use the Conversation History Effec
 * DSHRED: `Context-Sensitive Generation of Open-Domain Conversational Responses`, dynamic and static attention mechanism on HRED
 * DSHRED-WA: Building the word-level attention on DSHRED
 * ReCoSa: `ReCoSa: Detecting the Relevant Contexts with Self-Attention for Multi-turn Dialogue Generation`. It should be noted that this implementation here is a little bit different from the original codes, but more powerful and practical (3 layer multi-head self-attention but only 1 layer in the orginal paper).
-* ReCoSa: Building word-level attention on ReCoSa
+* ReCoSa-WA: Building word-level attention on ReCoSa
 * HRAN: `Hierarchical Recurrent Attention Network for Response Generation`, actually it's the same as the HRED with word-level attention mechanism.
 
 
